@@ -36,13 +36,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+var migroscrawler_1 = require("./migroscrawler");
+var database_1 = require("./database");
 var puppeteer = require('puppeteer');
-var fs = require('fs');
 var migros = 'https://produkte.migros.ch/sortiment/supermarkt';
-var migrosNextButtonSelector = 'button[data-testid="msrc-articles--pagination-link-next"]';
-var migrosArticleSelector = 'article[data-testid="msrc-articles--article"]';
-var migrosFileName = 'migrosData.csv';
-var pageCount = 0;
 var puppeteerConfig = {
     timeout: 120000,
     headless: true,
@@ -71,137 +68,6 @@ function initializePage(browser, url) {
         });
     });
 }
-function getDataForPage(page, selector) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    console.log('loading data for page: ', pageCount++);
-                    return [4 /*yield*/, page.waitFor('article', { timeout: 5000 })];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/, page.evaluate(function (selector) {
-                            return Array.from(document.querySelectorAll(selector), function (article) { return article.innerText; });
-                        }, selector)];
-            }
-        });
-    });
-}
-function hasMorePages(page, selector) {
-    return __awaiter(this, void 0, void 0, function () {
-        var isDisabled, error_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 3, , 4]);
-                    return [4 /*yield*/, page.waitForSelector(selector, { timeout: 5000 })];
-                case 1:
-                    _a.sent();
-                    return [4 /*yield*/, page.$eval(selector, function (button) {
-                            return button.disabled;
-                        })];
-                case 2:
-                    isDisabled = _a.sent();
-                    return [2 /*return*/, !isDisabled];
-                case 3:
-                    error_1 = _a.sent();
-                    console.log("No more pages found");
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/, false];
-            }
-        });
-    });
-}
-function nextPage(page, selector) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, page.$eval(selector, function (el) { return el.click(); })];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-function cleanPrice(price) {
-    var splitPrice = price.split('.');
-    var afterComma = parseInt(splitPrice[1]);
-    if (isNaN(afterComma)) {
-        return parseFloat(splitPrice[0].replace('/(?!\.)\D/g', '') + '.00');
-    }
-    return parseFloat(splitPrice[0] + "." + afterComma.toString().padStart(2, '0'));
-}
-function parseMigrosArticle(article) {
-    var splitupArticleStrings = article.split('\n');
-    var price = cleanPrice(splitupArticleStrings[0]);
-    var isPromoted = splitupArticleStrings[1].includes('statt');
-    var name = isPromoted ? splitupArticleStrings[2] : splitupArticleStrings[1];
-    var oldPrice = isPromoted ? cleanPrice(splitupArticleStrings[1].split(' ')[1]) : null;
-    if (isPromoted) {
-        return {
-            price: price,
-            isPromoted: isPromoted,
-            name: name,
-            oldPrice: oldPrice
-        };
-    }
-    return {
-        price: price,
-        name: name,
-        isPromoted: isPromoted
-    };
-}
-function listedArticleToLine(_a) {
-    var name = _a.name, price = _a.price, oldPrice = _a.oldPrice;
-    return name + "\t" + price + "\t" + oldPrice + "\n";
-}
-function stringArrayToString(listedArticles) {
-    return listedArticles.map(listedArticleToLine).join('');
-}
-function writeMigrosDataToCsv(fileName, data, callback) {
-    fs.writeFileSync(fileName, stringArrayToString(data), callback);
-}
-function writeToFileCallback(err) {
-    if (err) {
-        console.error('could not write data ', err);
-    }
-    console.log('wrote Data to migrosData.csv');
-}
-function appendMigrosDataToCsv(fileName, data, callback) {
-    fs.appendFileSync(fileName, stringArrayToString(data), callback);
-}
-function combineDataFromAllPagesWritingInBetweenPages(page) {
-    return __awaiter(this, void 0, void 0, function () {
-        var _a, _b, _c, _d;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
-                case 0:
-                    writeMigrosDataToCsv(migrosFileName, [], writeToFileCallback);
-                    _e.label = 1;
-                case 1: return [4 /*yield*/, hasMorePages(page, migrosNextButtonSelector)];
-                case 2:
-                    if (!_e.sent()) return [3 /*break*/, 5];
-                    _a = appendMigrosDataToCsv;
-                    _b = [migrosFileName];
-                    return [4 /*yield*/, getDataForPage(page, migrosArticleSelector)];
-                case 3:
-                    _a.apply(void 0, _b.concat([(_e.sent()).map(parseMigrosArticle), writeToFileCallback]));
-                    return [4 /*yield*/, nextPage(page, migrosNextButtonSelector)];
-                case 4:
-                    _e.sent();
-                    return [3 /*break*/, 1];
-                case 5:
-                    _c = appendMigrosDataToCsv;
-                    _d = [migrosFileName];
-                    return [4 /*yield*/, getDataForPage(page, migrosArticleSelector)];
-                case 6:
-                    _c.apply(void 0, _d.concat([(_e.sent()).map(parseMigrosArticle), writeToFileCallback]));
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
 (function doGiveMeTheArticles() {
     return __awaiter(this, void 0, void 0, function () {
         var browser, page;
@@ -213,13 +79,14 @@ function combineDataFromAllPagesWritingInBetweenPages(page) {
                     return [4 /*yield*/, initializePage(browser, migros)];
                 case 2:
                     page = _a.sent();
-                    return [4 /*yield*/, combineDataFromAllPagesWritingInBetweenPages(page)];
+                    return [4 /*yield*/, migroscrawler_1.combineDataFromAllPagesWritingInBetweenPages(page)];
                 case 3:
                     _a.sent();
                     console.log('done, closing browser');
                     return [4 /*yield*/, browser.close()];
                 case 4:
                     _a.sent();
+                    database_1.closeDB();
                     return [2 /*return*/];
             }
         });
