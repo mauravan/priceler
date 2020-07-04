@@ -38,8 +38,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var migroscrawler_1 = require("./migroscrawler");
 var database_1 = require("./database");
+var helpers_1 = require("./helpers");
 var puppeteer = require('puppeteer');
-var migros = 'https://produkte.migros.ch/sortiment/supermarkt';
+var migrosBaseUrl = 'https://produkte.migros.ch/sortiment/supermarkt';
+var migrosPageUrl = '?page=';
 var puppeteerConfig = {
     timeout: 120000,
     headless: true,
@@ -49,46 +51,90 @@ function initializeBrowser(config) {
     console.log('launching browser');
     return puppeteer.launch(config);
 }
-function initializePage(browser, url) {
+function loadDataFromNetwork(browser, url) {
     return __awaiter(this, void 0, void 0, function () {
         var page;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    console.log('opening new page');
+                    console.log('navigation to url: ', url);
                     return [4 /*yield*/, browser.newPage()];
                 case 1:
                     page = _a.sent();
-                    console.log('navigation to url: ', url);
-                    return [4 /*yield*/, page.goto(url)];
-                case 2:
-                    _a.sent();
-                    return [2 /*return*/, page];
+                    return [2 /*return*/, new Promise((function (resolve) { return __awaiter(_this, void 0, void 0, function () {
+                            var _this = this;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        page.on('response', function (response) { return __awaiter(_this, void 0, void 0, function () {
+                                            var data;
+                                            return __generator(this, function (_a) {
+                                                switch (_a.label) {
+                                                    case 0:
+                                                        if (!response.url().includes("web-api.migros.ch/widgets/product_fragments_json")) return [3 /*break*/, 3];
+                                                        return [4 /*yield*/, response.json()];
+                                                    case 1:
+                                                        data = _a.sent();
+                                                        resolve(data);
+                                                        return [4 /*yield*/, page.close()];
+                                                    case 2:
+                                                        _a.sent();
+                                                        _a.label = 3;
+                                                    case 3: return [2 /*return*/];
+                                                }
+                                            });
+                                        }); });
+                                        return [4 /*yield*/, page.goto(url)];
+                                    case 1:
+                                        _a.sent();
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); }))];
             }
         });
     });
 }
 (function doGiveMeTheArticles() {
     return __awaiter(this, void 0, void 0, function () {
-        var browser, page;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var browser, maxPages, _a, maxPagesEnv, i, migrosArticles, productIds;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0: return [4 /*yield*/, initializeBrowser(puppeteerConfig)];
                 case 1:
-                    browser = _a.sent();
-                    return [4 /*yield*/, initializePage(browser, migros)];
+                    browser = _b.sent();
+                    _a = parseInt;
+                    return [4 /*yield*/, migroscrawler_1.getMaxPages(browser, migrosBaseUrl, migroscrawler_1.migrosLastButtonSelector)];
                 case 2:
-                    page = _a.sent();
-                    return [4 /*yield*/, migroscrawler_1.combineDataFromAllPagesWritingInBetweenPages(page)];
+                    maxPages = _a.apply(void 0, [_b.sent()]);
+                    maxPagesEnv = helpers_1.pagesFromEnv();
+                    i = 1;
+                    _b.label = 3;
                 case 3:
-                    _a.sent();
+                    if (!(i <= maxPages && i <= maxPagesEnv)) return [3 /*break*/, 7];
+                    return [4 /*yield*/, loadDataFromNetwork(browser, "" + migrosBaseUrl + migrosPageUrl + i)];
+                case 4:
+                    migrosArticles = _b.sent();
+                    return [4 /*yield*/, Promise.all(migrosArticles.map(migroscrawler_1.mapMigrosArticleToProduct).map(database_1.createOrUpdateProduct))];
+                case 5:
+                    productIds = _b.sent();
+                    console.log(productIds);
+                    _b.label = 6;
+                case 6:
+                    i++;
+                    return [3 /*break*/, 3];
+                case 7:
                     console.log('done, closing browser');
                     return [4 /*yield*/, browser.close()];
-                case 4:
-                    _a.sent();
+                case 8:
+                    _b.sent();
+                    console.log('closing db');
                     database_1.closeDB();
+                    console.log('bye');
                     return [2 /*return*/];
             }
         });
     });
 }());
+//# sourceMappingURL=index.js.map
