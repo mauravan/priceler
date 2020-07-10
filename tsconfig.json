@@ -13,9 +13,13 @@
   },
   "files": [
     "index.ts",
-    "database.ts",
-    "helpers.ts",
-    "migroscrawler.ts",
-    "types.ts"
+    "db/database.ts",
+    "crawlers/migroscrawler.ts",
+    "crawlers/notimplementedcrawler.ts",
+    "crawlers/crawler.ts",
+    "puppeteer/priclerPuppeteer.ts",
+    "config/types.ts",
+    "config/helpers.ts",
+    "config/env.ts"
   ]
 }

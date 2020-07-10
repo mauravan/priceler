@@ -1,5 +1,5 @@
-import {Product} from "./types";
 import {Database} from "sqlite3";
+import {Product} from "../config/types";
 
 const sqlite3 = require('sqlite3').verbose();
 let db: Database;
@@ -47,7 +47,9 @@ function all(sql: string, params: any[] = []) {
 (async function initializeDB() {
     db = new sqlite3.Database('./db/pricler.db', sqlite3.OPEN_READWRITE, (err: Error | null) => {
         if (err) {
-            return console.error(err);
+            console.error(err);
+            console.error('exiting');
+            process.exit()
         }
         console.log('Connected to the pricler database.');
     });
