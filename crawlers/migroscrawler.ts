@@ -1,13 +1,14 @@
 import {MigrosArticle, Product, RETAILER} from "../config/types";
 import {createOrUpdateProduct} from "../db/database";
 import {
+    autoScroll,
     closeBrowser,
     closePage,
     initializeBrowser,
     navigateToUrl,
     openNewPage,
 } from "../puppeteer/priclerPuppeteer";
-import {autoScroll} from "../config/helpers";
+import {onlyNumbersParsingToInt, Stopwatch, STOPWATCH_FORMAT, withoutHTMLTags} from "../config/helpers";
 import {Crawler, CRAWLERTYPE} from "./crawler";
 
 export const migrosLastButtonSelector = 'button[data-testid="msrc-articles--pagination-link-last-page"]';
@@ -34,7 +35,7 @@ function extractPrice(product: MigrosArticle): number {
         return metaPrice;
     }
     if (priceInfoPrice) {
-        return parseInt(priceInfoPrice.replace(/\D/g, ''));
+        return onlyNumbersParsingToInt(priceInfoPrice);
     }
     return 0;
 }
@@ -46,7 +47,7 @@ function extractOriginalPrice(product: MigrosArticle): number {
         return metaPrice;
     }
     if (priceInfoPrice) {
-        return parseInt(priceInfoPrice.replace(/\D/g, ''));
+        return onlyNumbersParsingToInt(priceInfoPrice);
     }
     return null;
 }
@@ -60,7 +61,7 @@ export function mapMigrosArticleToProduct(article: MigrosArticle): Product {
             date: new Date(),
             price: extractPrice(article),
             original_price: extractOriginalPrice(article),
-            quantity: article.price_info?.quantity || article.product_tile_infos?.price_sub_text
+            quantity: withoutHTMLTags(article.price_info?.quantity || article.product_tile_infos?.price_sub_text)
         }],
     }
 }
@@ -79,6 +80,7 @@ export class Migroscrawler implements Crawler {
 
     async crawl(amountOfPages: number): Promise<void> {
         console.log('starting crawler: ', this.type)
+        const stopwatch = new Stopwatch();
         initializeBrowser();
 
         const maxPages = parseInt(await getMaxPages(this.baseUrl, migrosLastButtonSelector));
@@ -86,9 +88,9 @@ export class Migroscrawler implements Crawler {
         for (let i = 1; i <= maxPages && i <= amountOfPages; i++) {
             // Fills up combinedMigrosData array
             const migrosArticles = await loadDataFromNetwork(`${this.baseUrl}${this.pageUrl}${i}`);
-            const productIds = await Promise.all(migrosArticles.map(mapMigrosArticleToProduct).map(createOrUpdateProduct));
-            console.log(productIds)
+            Promise.all(migrosArticles.map(mapMigrosArticleToProduct).map(createOrUpdateProduct));
         }
         closeBrowser();
+        console.log(`${this.type} done in ${stopwatch.stopTimer(STOPWATCH_FORMAT.SECS)} seconds`)
     }
 }

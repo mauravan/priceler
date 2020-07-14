@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="pricler.db" uuid="205b7205-f98e-4edd-9816-9bbb9a3e13af">
+    <data-source source="LOCAL" name="pricler.db" uuid="e6e4a13e-6325-4157-93e3-a785a29f1352">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>

@@ -13,8 +13,10 @@ import {crawlerMap} from "./crawlers/crawler";
         console.log('closing db')
         closeDB();
         console.log('bye')
+        process.exit();
     }).catch((e) => {
         console.log('error in a crawler: ', e);
+        process.exit();
     })
 })()
 

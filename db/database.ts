@@ -59,13 +59,20 @@ function all(sql: string, params: any[] = []) {
 
 async function update({name, prices: [price]}: Product): Promise<number> {
     const product = await getProductByName(name);
-    await run('INSERT INTO prices (product_id, price, date, original_price, quantity) VALUES (?, ?, ?, ?, ?)', [product.id, price.price, new Date(), price.original_price, price.quantity])
+    try {
+        await run('INSERT INTO prices (product_id, price, date, original_price, quantity) VALUES (?, ?, ?, ?, ?)', [product.id, price.price, new Date(), price.original_price, price.quantity])
+    } catch (e) {
+        console.log('could not update product, ', this.args[0], 'beacuse: ', e);
+    }
     return product.id;
 }
 
-function insert({name, retailer, externalId, prices: [price]}: Product): Promise<number> {
+function insert({name, retailer, externalId, prices: [price]}: Product): Promise<number | null> {
     return run('INSERT INTO products (name, external_id, retailer) VALUES (?, ?, ?)', [name, externalId, retailer]).then(id => {
         return run('INSERT INTO prices (product_id, price, date, original_price, quantity) VALUES (?, ?, ?, ?, ?)', [id, price.price, new Date(), price.original_price, price.quantity]).then(() => id)
+    }).catch(e => {
+        console.log('could not insert product, ', this.args[0], 'beacuse: ', e);
+        return null;
     })
 }
 
