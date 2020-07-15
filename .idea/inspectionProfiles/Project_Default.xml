@@ -6,6 +6,7 @@
     <inspection_tool class="IJVS0003" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="IJVS0004" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="IJVS0005" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="TsLint" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="XPST0017" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="XPST0081" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="XQST0031" enabled="true" level="ERROR" enabled_by_default="true" />

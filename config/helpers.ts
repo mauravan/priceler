@@ -5,6 +5,24 @@ export enum STOPWATCH_FORMAT {
     HOURS= 1000 * 60 * 60
 }
 
+export async function retryAble<T>(func: () => Promise<T>, times: number = 3, waiting = 1000): Promise<T | null> {
+    try {
+        return func();
+    } catch (e) {
+        console.log('could not execute request will retry: ', times, ' times')
+        console.error(e);
+        if(times > 0) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve(retryAble(func, times-1));
+                }, waiting)
+            })
+        }
+        console.log('could not execute request giving up');
+        return null;
+    }
+}
+
 export function withoutLeadngAndTrailingWhitespace(text: string): string {
     return text.trim();
 }

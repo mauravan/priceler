@@ -30,7 +30,7 @@ function get(sql: string, params: any[] = []): Promise<any> {
     })
 }
 
-function all(sql: string, params: any[] = []) {
+function all(sql: string, params: any[] = []): Promise<any> {
     return new Promise((resolve, reject) => {
         db.all(sql, params, (err, rows) => {
             if (err) {
@@ -82,6 +82,18 @@ export function createOrUpdateProduct(product: Product): Promise<number> {
             return update(product);
         }
     })
+}
+
+export async function getProductCount(): Promise<number> {
+    return await get('SELECT COUNT(*) FROM products');
+}
+
+export async function getProductsPaged(start: number, end: number): Promise<Array<Product>> {
+    return all(`SELECT *
+                      FROM products
+                      WHERE id > ?
+                      ORDER BY id
+                      LIMIT ?;`, [start, end]);
 }
 
 export async function getProductByName(name: string): Promise<Product> {

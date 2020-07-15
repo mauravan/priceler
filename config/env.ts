@@ -1,4 +1,4 @@
-import {CRAWLERTYPE} from "../crawlers/crawler";
+import {CRAWLERTYPE} from "../crawlerapp/crawlers/crawler";
 
 function getProcessEnvironment() {
     return process.env;
