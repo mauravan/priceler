@@ -1,6 +1,6 @@
 import {activatedCrawlers, pagesFromEnv} from "../config/env";
-import {closeDB} from "../db/database";
 import {crawlerMap} from "./crawlers/crawler";
+import {closeDB} from "./db/database";
 
 (function initializer() {
 

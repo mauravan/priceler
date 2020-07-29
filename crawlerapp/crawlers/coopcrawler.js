@@ -42,15 +42,31 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
             r[k] = a[j];
     return r;
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Coopcrawler = void 0;
 var helpers_1 = require("../../config/helpers");
 var jsdomHelper_1 = require("../jsdom/jsdomHelper");
-var types_1 = require("../../config/types");
 var priclerPuppeteer_1 = require("../puppeteer/priclerPuppeteer");
-var database_1 = require("../../db/database");
-var clickSeeAllButtonFromDom = function (dom) { return dom.querySelector('a.cmsTeaserRow-controls__see-all').click(); };
-var getCoopCarouselContainigLinks = function (dom) { return dom.querySelectorAll('div.cmsList.cmsList--link>ul.cmsList__list'); };
-var getCoopLinksFromContainer = function (el) { return el.querySelectorAll('a.cmsList__itemLink'); };
+var types_1 = require("../../types/types");
+var database_1 = require("../db/database");
+var clickSeeAllButtonFromDom = function (dom) {
+    return dom.querySelector("a.cmsTeaserRow-controls__see-all").click();
+};
+var getCoopCarouselContainigLinks = function (dom) {
+    return dom.querySelectorAll("div.cmsList.cmsList--link>ul.cmsList__list");
+};
+var getCoopLinksFromContainer = function (el) {
+    return el.querySelectorAll("a.cmsList__itemLink");
+};
+var listPageTriggerPresent = function () {
+    return document.querySelector("a.list-page__trigger") != null &&
+        // @ts-ignore
+        document.querySelector("a.list-page__trigger").style.display !== "none";
+};
+var clickListPageTrigger = function () {
+    // @ts-ignore
+    return document.querySelector(".list-page__trigger").click();
+};
 var Coopcrawler = /** @class */ (function () {
     function Coopcrawler(type, baseUrl, pageUrl) {
         this.type = type;
@@ -66,9 +82,9 @@ var Coopcrawler = /** @class */ (function () {
                     case 1:
                         dom = _a.sent();
                         clickSeeAllButtonFromDom(dom);
-                        return [2 /*return*/, new Set(Array.from(getCoopCarouselContainigLinks(dom))
+                        return [2 /*return*/, Array.from(getCoopCarouselContainigLinks(dom))
                                 .reduce(function (acc, curr) { return __spreadArrays(acc, Array.from(getCoopLinksFromContainer(curr))); }, [])
-                                .map(function (el) { return el.href; }))];
+                                .map(function (el) { return ({ url: el.href, cat: el.text }); })];
                 }
             });
         });
@@ -80,19 +96,15 @@ var Coopcrawler = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 7, , 8]);
-                        return [4 /*yield*/, priclerPuppeteer_1.autoScroll(page)
-                            // @ts-ignore
-                        ];
+                        return [4 /*yield*/, priclerPuppeteer_1.autoScroll(page)];
                     case 1:
                         _a.sent();
                         _a.label = 2;
-                    case 2: return [4 /*yield*/, page.evaluate(function () { return document.querySelector('a.list-page__trigger') != null && document.querySelector('a.list-page__trigger').style.display !== 'none'; })];
+                    case 2: return [4 /*yield*/, page.evaluate(listPageTriggerPresent)];
                     case 3:
                         if (!_a.sent()) return [3 /*break*/, 6];
-                        // @ts-ignore
-                        return [4 /*yield*/, page.evaluate(function () { return document.querySelector('.list-page__trigger').click(); })];
+                        return [4 /*yield*/, page.evaluate(clickListPageTrigger)];
                     case 4:
-                        // @ts-ignore
                         _a.sent();
                         return [4 /*yield*/, priclerPuppeteer_1.autoScroll(page)];
                     case 5:
@@ -101,7 +113,7 @@ var Coopcrawler = /** @class */ (function () {
                     case 6: return [3 /*break*/, 8];
                     case 7:
                         e_1 = _a.sent();
-                        console.log('error trying to autoscroll - continuing', e_1);
+                        console.log("error trying to autoscroll - continuing", e_1);
                         return [3 /*break*/, 8];
                     case 8: return [2 /*return*/];
                 }
@@ -115,32 +127,116 @@ var Coopcrawler = /** @class */ (function () {
             if (maybeElement) {
                 return maybeElement.innerHTML;
             }
-            return '';
+            return "";
         };
         return divs.map(function (div) {
             // @ts-ignore
-            var isPromoted = div.querySelector('dd.productTile__price-value.productTile__price-value--red.productTile__price-value-save') != null && div.querySelector('dd.productTile__price-value.productTile__price-value--red.productTile__price-value-save').style.display !== 'none';
+            var isPromoted = div.querySelector("dd.productTile__price-value.productTile__price-value--red.productTile__price-value-save") != null &&
+                div.querySelector("dd.productTile__price-value.productTile__price-value--red.productTile__price-value-save"
+                // @ts-ignore
+                ).style.display !== "none";
             var price;
-            var original_price = '';
+            var original_price = "";
             if (isPromoted) {
-                price = safeQueryInnerHtml(div, 'dd.productTile__price-value.productTile__price-value-lead.productTile__price-value-lead--marked');
-                original_price = safeQueryInnerHtml(div, 'dd.productTile__price-value.productTile__price-value--red.productTile__price-value-save');
+                price = safeQueryInnerHtml(div, "dd.productTile__price-value.productTile__price-value-lead.productTile__price-value-lead--marked");
+                original_price = safeQueryInnerHtml(div, "dd.productTile__price-value.productTile__price-value--red.productTile__price-value-save");
             }
             else {
-                price = safeQueryInnerHtml(div, 'dd.productTile__price-value.productTile__price-value-lead');
+                price = safeQueryInnerHtml(div, "dd.productTile__price-value.productTile__price-value-lead");
             }
             return {
-                externalId: parseInt(div.querySelector('a.productTile ').id),
-                name: safeQueryInnerHtml(div, 'p.productTile-details__name-value'),
-                prices: [{
+                externalId: parseInt(div.querySelector("a.productTile ").id),
+                name: safeQueryInnerHtml(div, "p.productTile-details__name-value"),
+                prices: [
+                    {
                         price: price,
                         original_price: original_price,
-                        quantity: safeQueryInnerHtml(div, 'span.productTile__quantity-text')
-                    }]
+                        quantity: safeQueryInnerHtml(div, "span.productTile__quantity-text"),
+                    },
+                ],
             };
         });
     };
-    Coopcrawler.prototype.loadProductsPerCategory = function (url, browser) {
+    // Quantity: 190g, 2x&nbsp;125g, 1.1kg, 500ml, 6ST, 2x 150g
+    Coopcrawler.prototype.parseQuantityAndUnit = function (quantity) {
+        if (!quantity) {
+            return {
+                quantity: 0,
+                unit: "",
+            };
+        }
+        // ["190", "g"], ["2", "x", "&", "nbsp;", "125", "g"], ["1.1", "kg"], ["6", "ST"], ["2", "x ", "150", "g"]
+        var splitValues = quantity.match(/[a-z|;|\s]+|[^a-z|;|\s]+/gi);
+        var unit = splitValues[splitValues.length - 1];
+        if (splitValues.length > 2) {
+            var multiplier = parseInt(splitValues[0]);
+            var quantityAsString_1 = splitValues[splitValues.length - 2];
+            if (quantityAsString_1.includes(".")) {
+                var parsedQuantityFloat = parseFloat(quantityAsString_1);
+                return {
+                    quantity: multiplier * parsedQuantityFloat,
+                    unit: unit,
+                };
+            }
+            var parsedQuantityInt = parseInt(quantityAsString_1);
+            return {
+                quantity: multiplier * parsedQuantityInt,
+                unit: unit,
+            };
+        }
+        var quantityAsString = splitValues[0];
+        if (quantityAsString.includes(".")) {
+            var quantityAsFloat = parseFloat(quantityAsString);
+            return {
+                quantity: quantityAsFloat,
+                unit: unit,
+            };
+        }
+        var quantitAsInt = parseInt(quantityAsString);
+        return {
+            quantity: quantitAsInt,
+            unit: unit,
+        };
+    };
+    Coopcrawler.prototype.loadProductsPerCategory = function (_a, browser) {
+        var url = _a.url, cat = _a.cat;
+        return __awaiter(this, void 0, void 0, function () {
+            var productsAsHTML;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, this.readProductsFromDom(browser, url)];
+                    case 1:
+                        productsAsHTML = _b.sent();
+                        return [2 /*return*/, productsAsHTML.map(this.mapHTMLProductToProduct(cat))];
+                }
+            });
+        });
+    };
+    Coopcrawler.prototype.mapHTMLProductToProduct = function (cat) {
+        var _this = this;
+        return function (productAsHTML) {
+            var price = productAsHTML.prices[0];
+            var _a = _this.parseQuantityAndUnit(helpers_1.withoutLeadingAndTrailingWhitespace(price.quantity)), quantity = _a.quantity, unit = _a.unit;
+            var priceAsInt = helpers_1.onlyNumbersParsingToInt(price.price);
+            return {
+                name: productAsHTML.name,
+                externalId: productAsHTML.externalId,
+                retailer: types_1.RETAILER.COOP,
+                category: cat,
+                prices: [
+                    {
+                        date: new Date(),
+                        quantity: quantity,
+                        price: priceAsInt,
+                        original_price: helpers_1.onlyNumbersParsingToInt(price.original_price),
+                        unit: unit,
+                        normalized_price: helpers_1.normalizedPrice(priceAsInt, quantity),
+                    },
+                ],
+            };
+        };
+    };
+    Coopcrawler.prototype.readProductsFromDom = function (browser, url) {
         return __awaiter(this, void 0, void 0, function () {
             var page, productsAsHTML;
             return __generator(this, function (_a) {
@@ -154,25 +250,34 @@ var Coopcrawler = /** @class */ (function () {
                         return [4 /*yield*/, this.loadAllProductsToDom(page)];
                     case 3:
                         _a.sent();
-                        return [4 /*yield*/, page.$$eval('div.productTile__wrapper', this.mapCoopDivResultToProduct)];
+                        return [4 /*yield*/, page.$$eval("div.productTile__wrapper", this.mapCoopDivResultToProduct)];
                     case 4:
                         productsAsHTML = _a.sent();
                         return [4 /*yield*/, page.close()];
                     case 5:
                         _a.sent();
-                        return [2 /*return*/, productsAsHTML.map(function (productAsHTML) {
-                                var price = productAsHTML.prices[0];
-                                return {
-                                    name: productAsHTML.name,
-                                    externalId: productAsHTML.externalId,
-                                    retailer: types_1.RETAILER.COOP,
-                                    prices: [{
-                                            date: new Date(),
-                                            quantity: helpers_1.withoutLeadngAndTrailingWhitespace(price.quantity),
-                                            price: helpers_1.onlyNumbersParsingToInt(price.price),
-                                            original_price: helpers_1.onlyNumbersParsingToInt(price.original_price)
-                                        }]
-                                };
+                        return [2 /*return*/, productsAsHTML];
+                }
+            });
+        });
+    };
+    // JSDOM
+    Coopcrawler.prototype.readCategoriesFromUrlWithoutDuplicates = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var coopCategoryUrls, alreadyContainedCategory;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getCategoryUrls()];
+                    case 1:
+                        coopCategoryUrls = _a.sent();
+                        alreadyContainedCategory = [];
+                        return [2 /*return*/, coopCategoryUrls.filter(function (_a) {
+                                var url = _a.url;
+                                if (alreadyContainedCategory.includes(url)) {
+                                    return false;
+                                }
+                                alreadyContainedCategory.push(url);
+                                return true;
                             })];
                 }
             });
@@ -180,20 +285,19 @@ var Coopcrawler = /** @class */ (function () {
     };
     Coopcrawler.prototype.crawl = function (amountOfPages) {
         return __awaiter(this, void 0, void 0, function () {
-            var stopwatch, coopCategoryUrls, browser, coopCategoryUrlsAsArray, maxPages, i, productsByCategory, e_2;
+            var stopwatch, browser, categoriesWithoutDuplicates, maxPages, i, productsByCategory, e_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        console.log('starting crawler: ', this.type);
+                        console.log("starting crawler: ", this.type);
                         stopwatch = new helpers_1.Stopwatch();
-                        return [4 /*yield*/, this.getCategoryUrls()];
-                    case 1:
-                        coopCategoryUrls = _a.sent();
                         return [4 /*yield*/, priclerPuppeteer_1.initializeBrowser()];
-                    case 2:
+                    case 1:
                         browser = _a.sent();
-                        coopCategoryUrlsAsArray = Array.from(coopCategoryUrls);
-                        maxPages = coopCategoryUrlsAsArray.length;
+                        return [4 /*yield*/, this.readCategoriesFromUrlWithoutDuplicates()];
+                    case 2:
+                        categoriesWithoutDuplicates = _a.sent();
+                        maxPages = categoriesWithoutDuplicates.length;
                         i = 0;
                         _a.label = 3;
                     case 3:
@@ -201,15 +305,15 @@ var Coopcrawler = /** @class */ (function () {
                         _a.label = 4;
                     case 4:
                         _a.trys.push([4, 6, , 7]);
-                        return [4 /*yield*/, this.loadProductsPerCategory(coopCategoryUrlsAsArray[i], browser)];
+                        return [4 /*yield*/, this.loadProductsPerCategory(categoriesWithoutDuplicates[i], browser)];
                     case 5:
                         productsByCategory = _a.sent();
                         productsByCategory.forEach(database_1.createOrUpdateProduct);
                         return [3 /*break*/, 7];
                     case 6:
                         e_2 = _a.sent();
-                        console.log('error in loading products to dom, ', e_2);
-                        console.log('retrying:', i--);
+                        console.log("error in loading products to dom, ", e_2);
+                        console.log("retrying:", i--);
                         return [3 /*break*/, 7];
                     case 7:
                         i++;
@@ -226,4 +330,3 @@ var Coopcrawler = /** @class */ (function () {
     return Coopcrawler;
 }());
 exports.Coopcrawler = Coopcrawler;
-//# sourceMappingURL=coopcrawler.js.map

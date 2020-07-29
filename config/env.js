@@ -1,5 +1,6 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runPuppeteerHeadless = exports.activatedCrawlers = exports.lidlActivated = exports.aldiActivated = exports.coopActivated = exports.migrosActivated = exports.pagesFromEnv = void 0;
 var crawler_1 = require("../crawlerapp/crawlers/crawler");
 function getProcessEnvironment() {
     return process.env;
@@ -39,4 +40,3 @@ function runPuppeteerHeadless() {
     return HEADLESS === 'true';
 }
 exports.runPuppeteerHeadless = runPuppeteerHeadless;
-//# sourceMappingURL=env.js.map

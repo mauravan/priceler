@@ -1,6 +1,7 @@
 "use strict";
 var _a;
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.crawlerMap = exports.CRAWLERTYPE = void 0;
 var migroscrawler_1 = require("./migroscrawler");
 var notimplementedcrawler_1 = require("./notimplementedcrawler");
 var lidlcrawler_1 = require("./lidlcrawler");
@@ -24,4 +25,3 @@ exports.crawlerMap = (_a = {},
     _a[CRAWLERTYPE.ALDI] = new notimplementedcrawler_1.Notimplementedcrawler(CRAWLERTYPE.ALDI),
     _a[CRAWLERTYPE.LIDL] = new lidlcrawler_1.Lidlcrawler(CRAWLERTYPE.LIDL, lildBaseUrl, lidlPageUrl),
     _a);
-//# sourceMappingURL=crawler.js.map

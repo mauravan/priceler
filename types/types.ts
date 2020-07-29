@@ -12,7 +12,8 @@ export interface MigrosArticle {
     },
     product_tile_infos: {
         price_sub_text: string
-    }
+    },
+    categories: Array<{ code: string, name: string }>
 }
 
 export enum RETAILER {
@@ -27,7 +28,16 @@ export interface Product {
     externalId: number,
     name: string,
     retailer: number,
+    category: string,
     prices?: Array<Price>,
+}
+
+export interface FlatProduct {
+    id: number,
+    name: string,
+    retailer: number,
+    price: number,
+    quantity: string
 }
 
 export interface Price {
@@ -35,7 +45,9 @@ export interface Price {
     price: number
     original_price?: number
     date: Date
-    quantity?: string
+    quantity?: number,
+    unit: string,
+    normalized_price: number
 }
 export function isPromoted(price: Price) {
     return price.original_price != null;

@@ -35,19 +35,34 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
-var types_1 = require("../../config/types");
-var database_1 = require("../../db/database");
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Lidlcrawler = void 0;
 var helpers_1 = require("../../config/helpers");
 var jsdomHelper_1 = require("../jsdom/jsdomHelper");
-var getExternalIdFromDetailHTML = function (details) { return parseInt(details.querySelector('div.price-box.price-final_price').dataset.productId); };
-var getNameFromDetailHTML = function (details) { return details.querySelector('strong.product.name.product-item-name').innerHTML + " " + details.querySelector('div.product.description.product-item-description').innerHTML; };
-var getPriceFromDetailHTML = function (details) { return helpers_1.onlyNumbersParsingToInt(details.querySelector('strong.pricefield__price').getAttribute('content')); };
-var getOriginalPriceFromDetailHTML = function (details) { return details.querySelector('.pricefield__old-price') != null ? helpers_1.onlyNumbersParsingToInt(details.querySelector('.pricefield__old-price').innerHTML) : 0; };
-var getQuantityFromDetailHTML = function (details) { return helpers_1.withoutLeadngAndTrailingWhitespace(details.querySelector('span.pricefield__footer').innerHTML); };
-var lidlProductListId = 'amasty-shopby-product-list';
-var lidlListQuerySelector = 'ol.products.list.items.product-items';
-var lidlDetailSelector = 'div.product.details.product-item-details';
+var types_1 = require("../../types/types");
+var database_1 = require("../db/database");
+var getExternalIdFromDetailHTML = function (details) {
+    return parseInt(details.querySelector("div.price-box.price-final_price")
+        .dataset.productId);
+};
+var getNameFromDetailHTML = function (details) {
+    return details.querySelector("strong.product.name.product-item-name").innerHTML + " " + details.querySelector("div.product.description.product-item-description")
+        .innerHTML;
+};
+var getPriceFromDetailHTML = function (details) {
+    return helpers_1.onlyNumbersParsingToInt(details.querySelector("strong.pricefield__price").getAttribute("content"));
+};
+var getOriginalPriceFromDetailHTML = function (details) {
+    return details.querySelector(".pricefield__old-price") != null
+        ? helpers_1.onlyNumbersParsingToInt(details.querySelector(".pricefield__old-price").innerHTML)
+        : 0;
+};
+var getQuantityFromDetailHTML = function (details) {
+    return helpers_1.withoutLeadingAndTrailingWhitespace(details.querySelector("span.pricefield__footer").innerHTML);
+};
+var lidlProductListId = "amasty-shopby-product-list";
+var lidlListQuerySelector = "ol.products.list.items.product-items";
+var lidlDetailSelector = "div.product.details.product-item-details";
 var Lidlcrawler = /** @class */ (function () {
     function Lidlcrawler(type, baseUrl, pageUrl) {
         this.type = type;
@@ -55,25 +70,96 @@ var Lidlcrawler = /** @class */ (function () {
         this.pageUrl = pageUrl;
     }
     Lidlcrawler.prototype.getMaxCount = function (document) {
-        return parseInt(document.getElementById('am-page-count').innerHTML);
+        return parseInt(document.getElementById("am-page-count").innerHTML);
+    };
+    // pro 12 Stück
+    // pro 1kg
+    // ca. 180-220g
+    // ca. 255g
+    // pro 0,75l | 1l = 6.66 CHF
+    // pro 190g/200g | 100g = 2.63,2.50 CHF
+    // pro 26,30,36 Stk. | 1 Stk = 0.20, 0.17, 0.14 CHF
+    // pro 3x90g | 100g = 1.82 CHF
+    // ["pro", "3x90g", "|", "100g", "=", "1.82", "CHF"]
+    Lidlcrawler.prototype.getQuantityDetailsWithUnit = function (quantity) {
+        // &nbsp;
+        if (!quantity || quantity === "&nbsp;") {
+            return {
+                unit: "",
+                quantity: 1,
+            };
+        }
+        var splitByPipe = quantity.split("|");
+        var withoutPro = helpers_1.withoutLeadingAndTrailingWhitespace(splitByPipe[0]).substr(3);
+        var splitNumberAndUnit = /[a-z|ü|;]+|[^a-z|;|\s]+/gi; //
+        var matchNumberAndUnit = /\d+,?\d? ?[a-z|ü]+/gi; // number and unit
+        try {
+            // ["Stück"]
+            if (!helpers_1.containsNumber(withoutPro)) {
+                return {
+                    unit: withoutPro,
+                    quantity: 1,
+                };
+            }
+            var valueOrUnit = withoutPro.match(matchNumberAndUnit);
+            var value = valueOrUnit[valueOrUnit.length - 1];
+            // ["3x90g"]
+            if (value.includes("x")) {
+                var multiplier = parseInt(value.split("x")[0]);
+                var _a = value.match(splitNumberAndUnit), quant_1 = _a[0], unit_1 = _a[1];
+                return {
+                    quantity: multiplier * parseFloat(quant_1),
+                    unit: unit_1,
+                };
+            }
+            // ["275g,400g"]
+            // ["47g/60Stk"]
+            // ["190g/200g"]
+            // ["12,5g,15g,25g"]
+            // ["12 Stück"]
+            // ["14 Stück,20 Stück"]
+            // ["14 Stück,20 Stück"]
+            // ["1kg"]
+            // ["180-220g"]
+            // ["26,30,36 Stk."]
+            // ["12 Stück"]
+            var _b = value.match(splitNumberAndUnit), quant = _b[0], unit = _b[1];
+            return {
+                quantity: parseFloat(quant),
+                unit: unit,
+            };
+        }
+        catch (e) {
+            console.log(quantity, withoutPro, e);
+        }
     };
     Lidlcrawler.prototype.mapLidlHTMLToPrduct = function (lidlProductAsHTML) {
         var lidlDetails = lidlProductAsHTML.querySelector(lidlDetailSelector);
+        var quantityFromDetailHTML = getQuantityFromDetailHTML(lidlDetails);
+        var _a = this.getQuantityDetailsWithUnit(quantityFromDetailHTML), quantity = _a.quantity, unit = _a.unit;
+        var priceFromDetailHTML = getPriceFromDetailHTML(lidlDetails);
         return {
             externalId: getExternalIdFromDetailHTML(lidlDetails),
             name: getNameFromDetailHTML(lidlDetails),
             retailer: types_1.RETAILER.LIDL,
-            prices: [{
-                    price: getPriceFromDetailHTML(lidlDetails),
-                    quantity: getQuantityFromDetailHTML(lidlDetails),
+            category: "",
+            prices: [
+                {
+                    price: priceFromDetailHTML,
+                    quantity: quantity,
                     original_price: getOriginalPriceFromDetailHTML(lidlDetails),
                     date: new Date(),
-                }]
+                    unit: unit,
+                    normalized_price: helpers_1.normalizedPrice(priceFromDetailHTML, quantity),
+                },
+            ],
         };
     };
     Lidlcrawler.prototype.getDataFromDocument = function (document) {
-        var listElements = document.getElementById(lidlProductListId).querySelector(lidlListQuerySelector).children;
-        return Array.from(listElements).map(this.mapLidlHTMLToPrduct);
+        var listElements = document
+            .getElementById(lidlProductListId)
+            .querySelector(lidlListQuerySelector).children;
+        return Array.from(listElements).map(this.mapLidlHTMLToPrduct.bind(this));
     };
     Lidlcrawler.prototype.crawl = function (amountOfPages) {
         return __awaiter(this, void 0, void 0, function () {
@@ -82,7 +168,7 @@ var Lidlcrawler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        console.log('starting crawler: ', this.type);
+                        console.log("starting crawler: ", this.type);
                         stopwatch = new helpers_1.Stopwatch();
                         return [4 /*yield*/, jsdomHelper_1.goToPageReturningDom(this.baseUrl + this.pageUrl + "1")];
                     case 1:
@@ -94,20 +180,22 @@ var Lidlcrawler = /** @class */ (function () {
                                 switch (_a.label) {
                                     case 0:
                                         _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, helpers_1.retryAble(function () { return jsdomHelper_1.goToPageReturningDom("" + (_this.baseUrl + _this.pageUrl) + i); })];
+                                        return [4 /*yield*/, helpers_1.retryAble(function () {
+                                                return jsdomHelper_1.goToPageReturningDom("" + (_this.baseUrl + _this.pageUrl) + i);
+                                            })];
                                     case 1:
                                         loadedJsDom = _a.sent();
                                         try {
                                             this_1.getDataFromDocument(loadedJsDom).map(database_1.createOrUpdateProduct);
                                         }
                                         catch (e) {
-                                            console.log('Error in mapping data in crawler: ', this_1.type);
+                                            console.log("Error in mapping data in crawler: ", this_1.type, " | ", e);
                                         }
                                         return [3 /*break*/, 3];
                                     case 2:
                                         e_1 = _a.sent();
-                                        console.log('Error in loading dom in crawler: ', this_1.type, ', ', e_1);
-                                        console.log('retry: ', i--);
+                                        console.log("Error in loading dom in crawler: ", this_1.type, ", ", e_1);
+                                        console.log("retry: ", i--);
                                         return [3 /*break*/, 3];
                                     case 3:
                                         out_i_1 = i;
@@ -138,4 +226,3 @@ var Lidlcrawler = /** @class */ (function () {
     return Lidlcrawler;
 }());
 exports.Lidlcrawler = Lidlcrawler;
-//# sourceMappingURL=lidlcrawler.js.map

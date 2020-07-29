@@ -1,18 +1,41 @@
-<mat-table [dataSource]="dataSource" class="mat-elevation-z8">
-  <!-- Name Column -->
+<mat-form-field>
+  <mat-label>Clearable input</mat-label>
+  <input #input matInput type="text" [(ngModel)]="value">
+  <button mat-button *ngIf="value" matSuffix mat-icon-button aria-label="Clear" (click)="value=''">
+    <mat-icon>close</mat-icon>
+  </button>
+</mat-form-field>
+
+<table mat-table [dataSource]="dataSource"
+       matSort matSortActive="id" matSortDisableClear matSortDirection="desc">
+  <ng-container matColumnDef="id">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>#</th>
+    <td mat-cell *matCellDef="let row">{{row.id}}</td>
+  </ng-container>
+
   <ng-container matColumnDef="name">
-    <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
-    <mat-cell *matCellDef="let product"> {{product.name}} </mat-cell>
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+    <td mat-cell *matCellDef="let row">{{row.name}}</td>
   </ng-container>
 
-  <!-- Weight Column -->
   <ng-container matColumnDef="retailer">
-    <mat-header-cell *matHeaderCellDef> Retailer </mat-header-cell>
-    <mat-cell *matCellDef="let product"> {{product.retailer}} </mat-cell>
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Retailer</th>
+    <td mat-cell *matCellDef="let row">{{row.retailer}}</td>
   </ng-container>
 
-  <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-  <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+  <ng-container matColumnDef="price">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Price</th>
+    <td mat-cell *matCellDef="let row">{{row.price}}</td>
+  </ng-container>
 
-  <mat-paginator [length]="100" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
-</mat-table>
+  <ng-container matColumnDef="quantity">
+    <th mat-header-cell *matHeaderCellDef>Quantity</th>
+    <td mat-cell *matCellDef="let row">{{row.quantity}}</td>
+  </ng-container>
+
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+</table>
+
+<mat-paginator [length]="productsCount | async" [pageSize]="20" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons></mat-paginator>

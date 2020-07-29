@@ -35,11 +35,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
-var types_1 = require("../../config/types");
-var database_1 = require("../../db/database");
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Migroscrawler = exports.mapMigrosArticleToProduct = exports.migrosLastButtonSelector = void 0;
 var priclerPuppeteer_1 = require("../puppeteer/priclerPuppeteer");
 var helpers_1 = require("../../config/helpers");
+var types_1 = require("../../types/types");
+var database_1 = require("../db/database");
 exports.migrosLastButtonSelector = 'button[data-testid="msrc-articles--pagination-link-last-page"]';
 function loadDataFromNetwork(url, browser) {
     return __awaiter(this, void 0, void 0, function () {
@@ -50,12 +51,12 @@ function loadDataFromNetwork(url, browser) {
                 case 0: return [4 /*yield*/, priclerPuppeteer_1.openNewPage(browser)];
                 case 1:
                     page = _a.sent();
-                    return [2 /*return*/, new Promise((function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                    return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
                             var _this = this;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        page.on('response', function (response) { return __awaiter(_this, void 0, void 0, function () {
+                                        page.on("response", function (response) { return __awaiter(_this, void 0, void 0, function () {
                                             var data;
                                             return __generator(this, function (_a) {
                                                 switch (_a.label) {
@@ -63,7 +64,9 @@ function loadDataFromNetwork(url, browser) {
                                                         if (response.status() === 500) {
                                                             reject(response);
                                                         }
-                                                        if (!response.url().includes("web-api.migros.ch/widgets/product_fragments_json")) return [3 /*break*/, 3];
+                                                        if (!response
+                                                            .url()
+                                                            .includes("web-api.migros.ch/widgets/product_fragments_json")) return [3 /*break*/, 3];
                                                         return [4 /*yield*/, response.json()];
                                                     case 1:
                                                         data = _a.sent();
@@ -82,7 +85,7 @@ function loadDataFromNetwork(url, browser) {
                                         return [2 /*return*/];
                                 }
                             });
-                        }); }))];
+                        }); })];
             }
         });
     });
@@ -111,18 +114,47 @@ function extractOriginalPrice(product) {
     }
     return null;
 }
+function extractQuantityAndUnit(quantityText) {
+    var quantityAndUnit = quantityText.replace(".", "").split(",", 1)[0];
+    var splitNumberAndUnit = /[a-z|ü]+|[^a-z|\s]+/gi;
+    var quantityAndUnitSeperated = quantityAndUnit.match(splitNumberAndUnit);
+    // 3 x 38g
+    if (quantityAndUnitSeperated.length > 2) {
+        var multiplier = parseInt(quantityAndUnitSeperated[0]);
+        var unit_1 = quantityAndUnitSeperated[quantityAndUnitSeperated.length - 1];
+        var quantity_1 = parseFloat(quantityAndUnitSeperated[quantityAndUnitSeperated.length - 2]);
+        return {
+            quantity: multiplier * quantity_1,
+            unit: unit_1,
+        };
+    }
+    var quantity = parseFloat(quantityAndUnitSeperated[0]);
+    var unit = quantityAndUnitSeperated[1];
+    return {
+        quantity: quantity,
+        unit: unit,
+    };
+}
 function mapMigrosArticleToProduct(article) {
-    var _a, _b;
+    var _a, _b, _c;
+    var quantityText = helpers_1.withoutHTMLTags(((_a = article.price_info) === null || _a === void 0 ? void 0 : _a.quantity) || ((_b = article.product_tile_infos) === null || _b === void 0 ? void 0 : _b.price_sub_text));
+    var _d = extractQuantityAndUnit(quantityText), quantity = _d.quantity, unit = _d.unit;
+    var price = extractPrice(article);
     return {
         externalId: article.id,
         name: article.name,
         retailer: types_1.RETAILER.MIGROS,
-        prices: [{
+        category: (_c = article.categories[1]) === null || _c === void 0 ? void 0 : _c.name,
+        prices: [
+            {
                 date: new Date(),
-                price: extractPrice(article),
+                price: price,
                 original_price: extractOriginalPrice(article),
-                quantity: helpers_1.withoutHTMLTags(((_a = article.price_info) === null || _a === void 0 ? void 0 : _a.quantity) || ((_b = article.product_tile_infos) === null || _b === void 0 ? void 0 : _b.price_sub_text))
-            }],
+                quantity: quantity,
+                unit: unit,
+                normalized_price: helpers_1.normalizedPrice(price, quantity),
+            },
+        ],
     };
 }
 exports.mapMigrosArticleToProduct = mapMigrosArticleToProduct;
@@ -164,7 +196,7 @@ var Migroscrawler = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        console.log('starting crawler: ', this.type);
+                        console.log("starting crawler: ", this.type);
                         stopwatch = new helpers_1.Stopwatch();
                         return [4 /*yield*/, priclerPuppeteer_1.initializeBrowser()];
                     case 1:
@@ -177,11 +209,13 @@ var Migroscrawler = /** @class */ (function () {
                             var migrosArticles;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, helpers_1.retryAble(function () { return loadDataFromNetwork("" + _this.baseUrl + _this.pageUrl + i, browser); })];
+                                    case 0: return [4 /*yield*/, helpers_1.retryAble(function () {
+                                            return loadDataFromNetwork("" + _this.baseUrl + _this.pageUrl + i, browser);
+                                        })];
                                     case 1:
                                         migrosArticles = _a.sent();
                                         if (!Array.isArray(migrosArticles)) {
-                                            console.log('not an array: ', migrosArticles);
+                                            console.log("not an array: ", migrosArticles);
                                             return [2 /*return*/, "continue"];
                                         }
                                         return [4 /*yield*/, Promise.all(migrosArticles.map(mapMigrosArticleToProduct).map(database_1.createOrUpdateProduct))];
@@ -214,4 +248,3 @@ var Migroscrawler = /** @class */ (function () {
     return Migroscrawler;
 }());
 exports.Migroscrawler = Migroscrawler;
-//# sourceMappingURL=migroscrawler.js.map

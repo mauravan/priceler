@@ -47,8 +47,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.closeDB = exports.getProductByName = exports.getProductsPaged = exports.getProductCount = exports.createOrUpdateProduct = void 0;
-var sqlite3 = require('sqlite3').verbose();
+exports.closeDB = exports.getProductByName = exports.getProductsPagedAndSorted = exports.getProductsPaged = exports.getProductCount = exports.createOrUpdateProduct = void 0;
+var sqlite3 = require("sqlite3").verbose();
+var DATABASE_PATH = "./crawlerapp/db/pricler.db";
 var db;
 function run(sql, params) {
     if (params === void 0) { params = []; }
@@ -68,7 +69,7 @@ function get(sql, params) {
     return new Promise(function (resolve, reject) {
         db.get(sql, params, function (err, result) {
             if (err) {
-                console.log('Error running sql: ' + sql);
+                console.log("Error running sql: " + sql);
                 console.log(err);
                 reject(err);
             }
@@ -83,7 +84,7 @@ function all(sql, params) {
     return new Promise(function (resolve, reject) {
         db.all(sql, params, function (err, rows) {
             if (err) {
-                console.log('Error running sql: ' + sql);
+                console.log("Error running sql: " + sql);
                 console.log(err);
                 reject(err);
             }
@@ -98,20 +99,22 @@ function all(sql, params) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    db = new sqlite3.Database('./db/pricler.db', sqlite3.OPEN_READWRITE, function (err) {
+                    console.log(process.cwd());
+                    db = new sqlite3.Database(DATABASE_PATH, sqlite3.OPEN_READWRITE, function (err) {
                         if (err) {
                             console.error(err);
-                            console.error('exiting');
+                            console.error("exiting");
                             process.exit();
                         }
-                        console.log('Connected to the pricler database.');
+                        console.log("Connected to the pricler database.");
                     });
-                    return [4 /*yield*/, run('CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY ON CONFLICT ROLLBACK AUTOINCREMENT, external_id INTEGER NOT NULL , name VARCHAR(255) UNIQUE ON CONFLICT ROLLBACK, retailer VARCHAR(255))')];
+                    return [4 /*yield*/, run("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY ON CONFLICT ROLLBACK AUTOINCREMENT, external_id INTEGER NOT NULL , name VARCHAR(255) UNIQUE ON CONFLICT ROLLBACK, retailer INTEGER, category VARCHAR(255))")];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, run('CREATE TABLE IF NOT EXISTS prices (id INTEGER PRIMARY KEY ON CONFLICT ROLLBACK AUTOINCREMENT, product_id INTEGER REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE, price INTEGER NOT NULL, date DATE NOT NULL, original_price INTEGER, quantity VARCHAR(255))')];
+                    return [4 /*yield*/, run("CREATE TABLE IF NOT EXISTS prices (id INTEGER PRIMARY KEY ON CONFLICT ROLLBACK AUTOINCREMENT, product_id INTEGER REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE, price INTEGER NOT NULL, date DATE NOT NULL, original_price INTEGER, quantity INTEGER, unit VARCHAR(255), normalized_price INTEGER)")];
                 case 2:
                     _a.sent();
+                    db.on("trace", console.log);
                     return [2 /*return*/];
             }
         });
@@ -129,13 +132,21 @@ function update(_a) {
                     _b.label = 2;
                 case 2:
                     _b.trys.push([2, 4, , 5]);
-                    return [4 /*yield*/, run('INSERT INTO prices (product_id, price, date, original_price, quantity) VALUES (?, ?, ?, ?, ?)', [product.id, price.price, new Date(), price.original_price, price.quantity])];
+                    return [4 /*yield*/, run("INSERT INTO prices (product_id, price, date, original_price, quantity, unit, normalized_price) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+                            product.id,
+                            price.price,
+                            new Date(),
+                            price.original_price,
+                            price.quantity,
+                            price.unit,
+                            price.normalized_price,
+                        ])];
                 case 3:
                     _b.sent();
                     return [3 /*break*/, 5];
                 case 4:
                     e_1 = _b.sent();
-                    console.log('could not update product, ', this.args[0], 'beacuse: ', e_1);
+                    console.log("could not update product, ", this.args[0], "beacuse: ", e_1);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/, product.id];
             }
@@ -144,17 +155,26 @@ function update(_a) {
 }
 function insert(_a) {
     var _this = this;
-    var name = _a.name, retailer = _a.retailer, externalId = _a.externalId, price = _a.prices[0];
-    return run('INSERT INTO products (name, external_id, retailer) VALUES (?, ?, ?)', [name, externalId, retailer]).then(function (id) {
-        return run('INSERT INTO prices (product_id, price, date, original_price, quantity) VALUES (?, ?, ?, ?, ?)', [id, price.price, new Date(), price.original_price, price.quantity]).then(function () { return id; });
+    var name = _a.name, retailer = _a.retailer, externalId = _a.externalId, category = _a.category, price = _a.prices[0];
+    return run("INSERT INTO products (name, external_id, retailer, category) VALUES (?, ?, ?, ?)", [name, externalId, retailer, category])
+        .then(function (id) {
+        return run("INSERT INTO prices (product_id, price, date, original_price, quantity, unit, normalized_price) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+            id,
+            price.price,
+            new Date(),
+            price.original_price,
+            price.quantity,
+            price.unit,
+            price.normalized_price,
+        ]).then(function () { return id; });
     })["catch"](function (e) {
-        console.log('could not insert product, ', _this.args[0], 'beacuse: ', e);
+        console.log("could not insert product, ", _this.args[0], "beacuse: ", e);
         return null;
     });
 }
 function createOrUpdateProduct(product) {
     return insert(product)["catch"](function (err) {
-        if (err.code === 'SQLITE_CONSTRAINT') {
+        if (err.code === "SQLITE_CONSTRAINT") {
             return update(product);
         }
     });
@@ -164,7 +184,7 @@ function getProductCount() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, get('SELECT COUNT(*) FROM products')];
+                case 0: return [4 /*yield*/, get("SELECT COUNT(*) as count FROM products")];
                 case 1: return [2 /*return*/, _a.sent()];
             }
         });
@@ -174,25 +194,44 @@ exports.getProductCount = getProductCount;
 function getProductsPaged(start, end) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, all("SELECT *\n                      FROM products\n                      WHERE id > ?\n                      ORDER BY id\n                      LIMIT ?;", [start, end])];
+            return [2 /*return*/, all("SELECT products.name, products.retailer, p.price, p.quantity\n                FROM products\n                LEFT JOIN prices p on products.id = p.product_id\n                WHERE products.id > ?\n                ORDER BY products.id\n                LIMIT ?, ?;", [start, end])];
         });
     });
 }
 exports.getProductsPaged = getProductsPaged;
+var sortableProperties = {
+    id: "products.id",
+    name: "products.name",
+    retailer: "products.retailer",
+    price: "p.price",
+};
+function getProductsPagedAndSorted(filter, sort, order, start, end) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            if (!["ASC", "DESC", ""].includes(order.toUpperCase())) {
+                return [2 /*return*/, Promise.reject("only ASC or DESC allowed")];
+            }
+            return [2 /*return*/, all("SELECT products.id, products.name, products.retailer, p.price, p.quantity\n                FROM products\n                LEFT JOIN prices p on products.id = p.product_id\n                WHERE products.name LIKE $filter\n                ORDER BY " + sortableProperties[sort] + " " + order + "\n                LIMIT $start, $end;", { $start: start, $end: end, $filter: "%" + filter + "%" })];
+        });
+    });
+}
+exports.getProductsPagedAndSorted = getProductsPagedAndSorted;
 function getProductByName(name) {
     return __awaiter(this, void 0, void 0, function () {
         var product, prices;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, get('SELECT * FROM products WHERE name = ?', [name])];
+                case 0: return [4 /*yield*/, get("SELECT * FROM products WHERE name = ?", [name])];
                 case 1:
                     product = _a.sent();
                     if (!product) return [3 /*break*/, 3];
-                    return [4 /*yield*/, all('SELECT * FROM prices where product_id = ?', [product.id])];
+                    return [4 /*yield*/, all("SELECT * FROM prices where product_id = ?", [
+                            product.id,
+                        ])];
                 case 2:
                     prices = _a.sent();
                     return [2 /*return*/, __assign(__assign({}, product), { prices: prices })];
-                case 3: return [2 /*return*/, Promise.reject('Product not found')];
+                case 3: return [2 /*return*/, Promise.reject("Product not found")];
             }
         });
     });
@@ -204,3 +243,4 @@ function closeDB() {
     }
 }
 exports.closeDB = closeDB;
+//# sourceMappingURL=database.js.map

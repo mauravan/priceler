@@ -35,8 +35,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
-exports.Stopwatch = exports.onlyNumbers = exports.onlyNumbersParsingToInt = exports.withoutHTMLTags = exports.withoutLeadngAndTrailingWhitespace = exports.retryAble = exports.STOPWATCH_FORMAT = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Stopwatch = exports.normalizedPrice = exports.containsNumber = exports.onlyNumbers = exports.onlyNumbersParsingToInt = exports.withoutHTMLTags = exports.withoutLeadingAndTrailingWhitespace = exports.retryAble = exports.STOPWATCH_FORMAT = void 0;
 var STOPWATCH_FORMAT;
 (function (STOPWATCH_FORMAT) {
     STOPWATCH_FORMAT[STOPWATCH_FORMAT["MILLIS"] = 1] = "MILLIS";
@@ -53,7 +53,7 @@ function retryAble(func, times, waiting) {
                 return [2 /*return*/, func()];
             }
             catch (e) {
-                console.log('could not execute request will retry: ', times, ' times');
+                console.log("could not execute request will retry: ", times, " times");
                 console.error(e);
                 if (times > 0) {
                     return [2 /*return*/, new Promise(function (resolve) {
@@ -62,7 +62,7 @@ function retryAble(func, times, waiting) {
                             }, waiting);
                         })];
                 }
-                console.log('could not execute request giving up');
+                console.log("could not execute request giving up");
                 return [2 /*return*/, null];
             }
             return [2 /*return*/];
@@ -70,12 +70,12 @@ function retryAble(func, times, waiting) {
     });
 }
 exports.retryAble = retryAble;
-function withoutLeadngAndTrailingWhitespace(text) {
+function withoutLeadingAndTrailingWhitespace(text) {
     return text.trim();
 }
-exports.withoutLeadngAndTrailingWhitespace = withoutLeadngAndTrailingWhitespace;
+exports.withoutLeadingAndTrailingWhitespace = withoutLeadingAndTrailingWhitespace;
 function withoutHTMLTags(text) {
-    return text ? text.replace(/<[^>]*>/g, '') : '';
+    return text ? text.replace(/<[^>]*>/g, "") : "";
 }
 exports.withoutHTMLTags = withoutHTMLTags;
 function onlyNumbersParsingToInt(text) {
@@ -83,9 +83,20 @@ function onlyNumbersParsingToInt(text) {
 }
 exports.onlyNumbersParsingToInt = onlyNumbersParsingToInt;
 function onlyNumbers(text) {
-    return text.replace(/\D/g, '');
+    return text.replace(/\D/g, "");
 }
 exports.onlyNumbers = onlyNumbers;
+function containsNumber(str) {
+    return /\d/.test(str);
+}
+exports.containsNumber = containsNumber;
+function normalizedPrice(price, quantity) {
+    if (price && quantity) {
+        return price / quantity;
+    }
+    return 0;
+}
+exports.normalizedPrice = normalizedPrice;
 var Stopwatch = /** @class */ (function () {
     function Stopwatch() {
         this.startTime = new Date();
@@ -100,4 +111,3 @@ var Stopwatch = /** @class */ (function () {
     return Stopwatch;
 }());
 exports.Stopwatch = Stopwatch;
-//# sourceMappingURL=helpers.js.map

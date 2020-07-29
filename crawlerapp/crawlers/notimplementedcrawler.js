@@ -1,5 +1,6 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Notimplementedcrawler = void 0;
 var Notimplementedcrawler = /** @class */ (function () {
     function Notimplementedcrawler(type) {
         this.type = type;
@@ -11,4 +12,3 @@ var Notimplementedcrawler = /** @class */ (function () {
     return Notimplementedcrawler;
 }());
 exports.Notimplementedcrawler = Notimplementedcrawler;
-//# sourceMappingURL=notimplementedcrawler.js.map
