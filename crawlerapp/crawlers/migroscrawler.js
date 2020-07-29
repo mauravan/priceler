@@ -35,12 +35,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.Migroscrawler = exports.mapMigrosArticleToProduct = exports.migrosLastButtonSelector = void 0;
 var priclerPuppeteer_1 = require("../puppeteer/priclerPuppeteer");
 var helpers_1 = require("../../config/helpers");
 var types_1 = require("../../types/types");
-var database_1 = require("../db/database");
+var products_database_1 = require("../db/products.database");
 exports.migrosLastButtonSelector = 'button[data-testid="msrc-articles--pagination-link-last-page"]';
 function loadDataFromNetwork(url, browser) {
     return __awaiter(this, void 0, void 0, function () {
@@ -115,24 +115,37 @@ function extractOriginalPrice(product) {
     return null;
 }
 function extractQuantityAndUnit(quantityText) {
-    var quantityAndUnit = quantityText.replace(".", "").split(",", 1)[0];
-    var splitNumberAndUnit = /[a-z|ü]+|[^a-z|\s]+/gi;
-    var quantityAndUnitSeperated = quantityAndUnit.match(splitNumberAndUnit);
-    // 3 x 38g
-    if (quantityAndUnitSeperated.length > 2) {
-        var multiplier = parseInt(quantityAndUnitSeperated[0]);
-        var unit_1 = quantityAndUnitSeperated[quantityAndUnitSeperated.length - 1];
-        var quantity_1 = parseFloat(quantityAndUnitSeperated[quantityAndUnitSeperated.length - 2]);
+    if (!quantityText || helpers_1.isOnlyWhitespace(quantityText)) {
         return {
-            quantity: multiplier * quantity_1,
-            unit: unit_1,
+            quantity: 1,
+            unit: "",
         };
     }
-    var quantity = parseFloat(quantityAndUnitSeperated[0]);
-    var unit = quantityAndUnitSeperated[1];
+    var quantityAndUnit = quantityText.replace(".", "").split(",", 1)[0];
+    var splitNumberAndUnit = /[a-z|ü]+|[^a-z|\s]+/gi;
+    var quantityAndUnitSeparated = quantityAndUnit.match(splitNumberAndUnit);
+    if (quantityAndUnitSeparated) {
+        // 3 x 38g
+        if (quantityAndUnitSeparated.length > 2) {
+            var multiplier = parseInt(quantityAndUnitSeparated[0]);
+            var unit_1 = quantityAndUnitSeparated[quantityAndUnitSeparated.length - 1];
+            var quantity_1 = parseFloat(quantityAndUnitSeparated[quantityAndUnitSeparated.length - 2]);
+            return {
+                quantity: multiplier * quantity_1,
+                unit: unit_1,
+            };
+        }
+        var quantity = parseFloat(quantityAndUnitSeparated[0]);
+        var unit = quantityAndUnitSeparated[1];
+        return {
+            quantity: quantity,
+            unit: unit,
+        };
+    }
+    console.log("Could not separate quantity and unit: ", quantityText, " -> ", quantityAndUnit, " -> ", quantityAndUnitSeparated);
     return {
-        quantity: quantity,
-        unit: unit,
+        quantity: 1,
+        unit: "",
     };
 }
 function mapMigrosArticleToProduct(article) {
@@ -205,6 +218,7 @@ var Migroscrawler = /** @class */ (function () {
                         return [4 /*yield*/, getMaxPages(this.baseUrl, exports.migrosLastButtonSelector, browser)];
                     case 2:
                         maxPages = _a.apply(void 0, [_b.sent()]);
+                        console.log("Found pages: ", maxPages);
                         _loop_1 = function (i) {
                             var migrosArticles;
                             return __generator(this, function (_a) {
@@ -218,7 +232,7 @@ var Migroscrawler = /** @class */ (function () {
                                             console.log("not an array: ", migrosArticles);
                                             return [2 /*return*/, "continue"];
                                         }
-                                        return [4 /*yield*/, Promise.all(migrosArticles.map(mapMigrosArticleToProduct).map(database_1.createOrUpdateProduct))];
+                                        return [4 /*yield*/, Promise.all(migrosArticles.map(mapMigrosArticleToProduct).map(products_database_1.createOrUpdateProduct))];
                                     case 2:
                                         _a.sent();
                                         return [2 /*return*/];
@@ -248,3 +262,4 @@ var Migroscrawler = /** @class */ (function () {
     return Migroscrawler;
 }());
 exports.Migroscrawler = Migroscrawler;
+//# sourceMappingURL=migroscrawler.js.map

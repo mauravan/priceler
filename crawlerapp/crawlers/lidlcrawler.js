@@ -35,12 +35,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.Lidlcrawler = void 0;
 var helpers_1 = require("../../config/helpers");
 var jsdomHelper_1 = require("../jsdom/jsdomHelper");
 var types_1 = require("../../types/types");
-var database_1 = require("../db/database");
+var products_database_1 = require("../db/products.database");
+var env_1 = require("../../config/env");
 var getExternalIdFromDetailHTML = function (details) {
     return parseInt(details.querySelector("div.price-box.price-final_price")
         .dataset.productId);
@@ -86,7 +87,7 @@ var Lidlcrawler = /** @class */ (function () {
         if (!quantity || quantity === "&nbsp;") {
             return {
                 unit: "",
-                quantity: 1,
+                quantity: 1
             };
         }
         var splitByPipe = quantity.split("|");
@@ -98,7 +99,7 @@ var Lidlcrawler = /** @class */ (function () {
             if (!helpers_1.containsNumber(withoutPro)) {
                 return {
                     unit: withoutPro,
-                    quantity: 1,
+                    quantity: 1
                 };
             }
             var valueOrUnit = withoutPro.match(matchNumberAndUnit);
@@ -109,7 +110,7 @@ var Lidlcrawler = /** @class */ (function () {
                 var _a = value.match(splitNumberAndUnit), quant_1 = _a[0], unit_1 = _a[1];
                 return {
                     quantity: multiplier * parseFloat(quant_1),
-                    unit: unit_1,
+                    unit: unit_1
                 };
             }
             // ["275g,400g"]
@@ -126,7 +127,7 @@ var Lidlcrawler = /** @class */ (function () {
             var _b = value.match(splitNumberAndUnit), quant = _b[0], unit = _b[1];
             return {
                 quantity: parseFloat(quant),
-                unit: unit,
+                unit: unit
             };
         }
         catch (e) {
@@ -150,9 +151,9 @@ var Lidlcrawler = /** @class */ (function () {
                     original_price: getOriginalPriceFromDetailHTML(lidlDetails),
                     date: new Date(),
                     unit: unit,
-                    normalized_price: helpers_1.normalizedPrice(priceFromDetailHTML, quantity),
+                    normalized_price: helpers_1.normalizedPrice(priceFromDetailHTML, quantity)
                 },
-            ],
+            ]
         };
     };
     Lidlcrawler.prototype.getDataFromDocument = function (document) {
@@ -163,8 +164,7 @@ var Lidlcrawler = /** @class */ (function () {
     };
     Lidlcrawler.prototype.crawl = function (amountOfPages) {
         return __awaiter(this, void 0, void 0, function () {
-            var stopwatch, loadedDom, maxPages, _loop_1, this_1, out_i_1, i;
-            var _this = this;
+            var stopwatch, loadedDom, maxPages, i, loadedJsDom, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -174,49 +174,35 @@ var Lidlcrawler = /** @class */ (function () {
                     case 1:
                         loadedDom = _a.sent();
                         maxPages = this.getMaxCount(loadedDom);
-                        _loop_1 = function (i) {
-                            var loadedJsDom, e_1;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, helpers_1.retryAble(function () {
-                                                return jsdomHelper_1.goToPageReturningDom("" + (_this.baseUrl + _this.pageUrl) + i);
-                                            })];
-                                    case 1:
-                                        loadedJsDom = _a.sent();
-                                        try {
-                                            this_1.getDataFromDocument(loadedJsDom).map(database_1.createOrUpdateProduct);
-                                        }
-                                        catch (e) {
-                                            console.log("Error in mapping data in crawler: ", this_1.type, " | ", e);
-                                        }
-                                        return [3 /*break*/, 3];
-                                    case 2:
-                                        e_1 = _a.sent();
-                                        console.log("Error in loading dom in crawler: ", this_1.type, ", ", e_1);
-                                        console.log("retry: ", i--);
-                                        return [3 /*break*/, 3];
-                                    case 3:
-                                        out_i_1 = i;
-                                        return [2 /*return*/];
-                                }
-                            });
-                        };
-                        this_1 = this;
+                        console.log("Found pages: ", maxPages);
                         i = 1;
                         _a.label = 2;
                     case 2:
-                        if (!(i <= maxPages && i <= amountOfPages)) return [3 /*break*/, 5];
-                        return [5 /*yield**/, _loop_1(i)];
+                        if (!(i <= maxPages && i <= amountOfPages)) return [3 /*break*/, 7];
+                        _a.label = 3;
                     case 3:
-                        _a.sent();
-                        i = out_i_1;
-                        _a.label = 4;
+                        _a.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, jsdomHelper_1.goToPageReturningDom("" + (this.baseUrl + this.pageUrl) + i)];
                     case 4:
+                        loadedJsDom = _a.sent();
+                        try {
+                            this.getDataFromDocument(loadedJsDom).map(products_database_1.createOrUpdateProduct);
+                        }
+                        catch (e) {
+                            console.log("Error in mapping data in crawler: ", this.type, " | ", e);
+                        }
+                        return [3 /*break*/, 6];
+                    case 5:
+                        e_1 = _a.sent();
+                        if (env_1.debugMode()) {
+                            console.log("Error in loading dom in crawler: ", this.type, ", ", e_1);
+                        }
+                        console.log("retry: ", i--);
+                        return [3 /*break*/, 6];
+                    case 6:
                         i++;
                         return [3 /*break*/, 2];
-                    case 5:
+                    case 7:
                         console.log(this.type + " done in " + stopwatch.stopTimer(helpers_1.STOPWATCH_FORMAT.SECS) + " seconds");
                         return [2 /*return*/];
                 }

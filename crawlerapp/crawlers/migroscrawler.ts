@@ -7,6 +7,7 @@ import {
   openNewPage,
 } from "../puppeteer/priclerPuppeteer";
 import {
+  isOnlyWhitespace,
   normalizedPrice,
   onlyNumbersParsingToInt,
   retryAble,
@@ -17,7 +18,7 @@ import {
 import { Crawler, CRAWLERTYPE } from "./crawler";
 import { Browser } from "puppeteer";
 import { MigrosArticle, Product, RETAILER } from "../../types/types";
-import { createOrUpdateProduct } from "../db/database";
+import { createOrUpdateProduct } from "../db/products.database";
 
 export const migrosLastButtonSelector =
   'button[data-testid="msrc-articles--pagination-link-last-page"]';
@@ -72,29 +73,53 @@ function extractOriginalPrice(product: MigrosArticle): number {
 }
 
 function extractQuantityAndUnit(quantityText: string) {
+  if (!quantityText || isOnlyWhitespace(quantityText)) {
+    return {
+      quantity: 1,
+      unit: "",
+    };
+  }
+
   const [quantityAndUnit] = quantityText.replace(".", "").split(",", 1);
   const splitNumberAndUnit = /[a-z|ü]+|[^a-z|\s]+/gi;
-  const quantityAndUnitSeperated = quantityAndUnit.match(splitNumberAndUnit);
+  const quantityAndUnitSeparated = quantityAndUnit.match(splitNumberAndUnit);
 
-  // 3 x 38g
-  if (quantityAndUnitSeperated.length > 2) {
-    const multiplier = parseInt(quantityAndUnitSeperated[0]);
-    const unit = quantityAndUnitSeperated[quantityAndUnitSeperated.length - 1];
-    const quantity = parseFloat(
-      quantityAndUnitSeperated[quantityAndUnitSeperated.length - 2]
-    );
+  if (quantityAndUnitSeparated) {
+    // 3 x 38g
+    if (quantityAndUnitSeparated.length > 2) {
+      const multiplier = parseInt(quantityAndUnitSeparated[0]);
+      const unit =
+        quantityAndUnitSeparated[quantityAndUnitSeparated.length - 1];
+      const quantity = parseFloat(
+        quantityAndUnitSeparated[quantityAndUnitSeparated.length - 2]
+      );
+      return {
+        quantity: multiplier * quantity,
+        unit: unit,
+      };
+    }
+
+    const quantity = parseFloat(quantityAndUnitSeparated[0]);
+    const unit = quantityAndUnitSeparated[1];
+
     return {
-      quantity: multiplier * quantity,
+      quantity: quantity,
       unit: unit,
     };
   }
 
-  const quantity = parseFloat(quantityAndUnitSeperated[0]);
-  const unit = quantityAndUnitSeperated[1];
+  console.log(
+    "Could not separate quantity and unit: ",
+    quantityText,
+    " -> ",
+    quantityAndUnit,
+    " -> ",
+    quantityAndUnitSeparated
+  );
 
   return {
-    quantity: quantity,
-    unit: unit,
+    quantity: 1,
+    unit: "",
   };
 }
 
@@ -149,6 +174,8 @@ export class Migroscrawler implements Crawler {
     const maxPages = parseInt(
       await getMaxPages(this.baseUrl, migrosLastButtonSelector, browser)
     );
+
+    console.log("Found pages: ", maxPages);
 
     for (let i = 1; i <= maxPages && i <= amountOfPages; i++) {
       // Fills up combinedMigrosData array

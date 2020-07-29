@@ -1,10 +1,15 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.runPuppeteerHeadless = exports.activatedCrawlers = exports.lidlActivated = exports.aldiActivated = exports.coopActivated = exports.migrosActivated = exports.pagesFromEnv = void 0;
+exports.__esModule = true;
+exports.runPuppeteerHeadless = exports.activatedCrawlers = exports.lidlActivated = exports.aldiActivated = exports.coopActivated = exports.migrosActivated = exports.pagesFromEnv = exports.debugMode = void 0;
 var crawler_1 = require("../crawlerapp/crawlers/crawler");
 function getProcessEnvironment() {
     return process.env;
 }
+function debugMode() {
+    var DEBUG = getProcessEnvironment().DEBUG;
+    return DEBUG === 'true';
+}
+exports.debugMode = debugMode;
 function pagesFromEnv() {
     var PAGES = getProcessEnvironment().PAGES;
     return parseInt(PAGES);
@@ -40,3 +45,4 @@ function runPuppeteerHeadless() {
     return HEADLESS === 'true';
 }
 exports.runPuppeteerHeadless = runPuppeteerHeadless;
+//# sourceMappingURL=env.js.map

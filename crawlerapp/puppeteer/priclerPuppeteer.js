@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.autoScroll = exports.closeBrowser = exports.closePage = exports.navigateToUrl = exports.openNewPage = exports.initializeBrowser = void 0;
 var helpers_1 = require("../../config/helpers");
 var priclerPuppeteer = require('puppeteer');
@@ -75,7 +75,7 @@ function navigateToUrl(page, url, browser) {
         var _this = this;
         return __generator(this, function (_a) {
             console.log('navigating to url: ' + url);
-            return [2 /*return*/, helpers_1.retryAble(function () { return page.goto(url, { waitUntil: 'load', timeout: 0 }).catch(function (err) { return __awaiter(_this, void 0, void 0, function () {
+            return [2 /*return*/, helpers_1.retryAble(function () { return page.goto(url, { waitUntil: 'load', timeout: 0 })["catch"](function (err) { return __awaiter(_this, void 0, void 0, function () {
                     var newPage;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
@@ -128,3 +128,4 @@ function autoScroll(page) {
     });
 }
 exports.autoScroll = autoScroll;
+//# sourceMappingURL=priclerPuppeteer.js.map

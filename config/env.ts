@@ -4,6 +4,11 @@ function getProcessEnvironment() {
     return process.env;
 }
 
+export function debugMode() {
+    const { DEBUG } = getProcessEnvironment()
+    return DEBUG === 'true'
+}
+
 export function pagesFromEnv(): number {
     const { PAGES } = getProcessEnvironment();
     return parseInt(PAGES);

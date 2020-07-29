@@ -17,6 +17,8 @@ import {
 } from 'rxjs/operators';
 import { fromEvent, merge, Observable, Subscription } from 'rxjs';
 import { MatSort } from '@angular/material/sort';
+import { ShoppinglistService } from '../shoppinglist/shoppinglist.service';
+import { Product } from '../../../../types/types';
 
 @Component({
   selector: 'app-table',
@@ -24,7 +26,15 @@ import { MatSort } from '@angular/material/sort';
   styleUrls: ['./table.component.scss'],
 })
 export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
-  displayedColumns: string[] = ['id', 'name', 'retailer', 'price', 'quantity'];
+  displayedColumns: string[] = [
+    'id',
+    'name',
+    'retailer',
+    'price',
+    'quantity',
+    'unit',
+    'normalized_price',
+  ];
   dataSource: ProductsDataSource;
   productsCount: Observable<number>;
   keyUpObservable: Subscription;
@@ -35,7 +45,10 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(MatSort) sort: MatSort;
   @ViewChild('input') input: ElementRef;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private shoppinglistService: ShoppinglistService
+  ) {}
 
   ngOnInit(): void {
     this.dataSource = new ProductsDataSource(this.http);
@@ -87,5 +100,9 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.mergedSubscription) {
       this.mergedSubscription.unsubscribe();
     }
+  }
+
+  addProductToShoppinglist(product: Product): void {
+    this.shoppinglistService.addProductToShoppingList(product).subscribe();
   }
 }

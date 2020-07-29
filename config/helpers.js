@@ -35,8 +35,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Stopwatch = exports.normalizedPrice = exports.containsNumber = exports.onlyNumbers = exports.onlyNumbersParsingToInt = exports.withoutHTMLTags = exports.withoutLeadingAndTrailingWhitespace = exports.retryAble = exports.STOPWATCH_FORMAT = void 0;
+exports.__esModule = true;
+exports.Stopwatch = exports.normalizedPrice = exports.containsNumber = exports.isOnlyWhitespace = exports.onlyNumbers = exports.onlyNumbersParsingToInt = exports.withoutHTMLTags = exports.withoutLeadingAndTrailingWhitespace = exports.retryAble = exports.STOPWATCH_FORMAT = void 0;
 var STOPWATCH_FORMAT;
 (function (STOPWATCH_FORMAT) {
     STOPWATCH_FORMAT[STOPWATCH_FORMAT["MILLIS"] = 1] = "MILLIS";
@@ -86,6 +86,10 @@ function onlyNumbers(text) {
     return text.replace(/\D/g, "");
 }
 exports.onlyNumbers = onlyNumbers;
+function isOnlyWhitespace(text) {
+    return !text.replace(/\s/g, '').length;
+}
+exports.isOnlyWhitespace = isOnlyWhitespace;
 function containsNumber(str) {
     return /\d/.test(str);
 }
@@ -111,3 +115,4 @@ var Stopwatch = /** @class */ (function () {
     return Stopwatch;
 }());
 exports.Stopwatch = Stopwatch;
+//# sourceMappingURL=helpers.js.map

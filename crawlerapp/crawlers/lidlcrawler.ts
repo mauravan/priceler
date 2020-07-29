@@ -10,7 +10,8 @@ import {
 } from "../../config/helpers";
 import { goToPageReturningDom } from "../jsdom/jsdomHelper";
 import { Price, Product, RETAILER } from "../../types/types";
-import { createOrUpdateProduct } from "../db/database";
+import { createOrUpdateProduct } from "../db/products.database";
+import { debugMode } from "../../config/env";
 
 const getExternalIdFromDetailHTML = (details: Element) =>
   parseInt(
@@ -163,10 +164,12 @@ export class Lidlcrawler implements Crawler {
     );
     const maxPages = this.getMaxCount(loadedDom);
 
+    console.log("Found pages: ", maxPages);
+
     for (let i = 1; i <= maxPages && i <= amountOfPages; i++) {
       try {
-        const loadedJsDom = await retryAble(() =>
-          goToPageReturningDom(`${this.baseUrl + this.pageUrl}${i}`)
+        const loadedJsDom = await goToPageReturningDom(
+          `${this.baseUrl + this.pageUrl}${i}`
         );
         try {
           this.getDataFromDocument(loadedJsDom).map(createOrUpdateProduct);
@@ -179,7 +182,9 @@ export class Lidlcrawler implements Crawler {
           );
         }
       } catch (e) {
-        console.log("Error in loading dom in crawler: ", this.type, ", ", e);
+        if (debugMode()) {
+          console.log("Error in loading dom in crawler: ", this.type, ", ", e);
+        }
         console.log("retry: ", i--);
       }
     }

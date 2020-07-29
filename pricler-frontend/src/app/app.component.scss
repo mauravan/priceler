@@ -1,0 +1,24 @@
+.wrapper {
+  width: 100%;
+  background: #303030;
+  display: grid;
+  grid-template-areas:
+    "table"
+    "list";
+}
+
+@media (min-width: 700px) {
+  .wrapper {
+    grid-template-columns: 3fr 1fr;
+    grid-template-areas:
+    "table list";
+  }
+}
+
+.table {
+  grid-area: table;
+}
+
+.list {
+  grid-area: list;
+}

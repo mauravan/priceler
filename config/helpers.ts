@@ -43,6 +43,10 @@ export function onlyNumbers(text: string): string {
   return text.replace(/\D/g, "");
 }
 
+export function isOnlyWhitespace(text: string): boolean {
+  return !text.replace(/\s/g, '').length
+}
+
 export function containsNumber(str: string) {
   return /\d/.test(str)
 }

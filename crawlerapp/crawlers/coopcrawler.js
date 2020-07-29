@@ -42,13 +42,13 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
             r[k] = a[j];
     return r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.Coopcrawler = void 0;
 var helpers_1 = require("../../config/helpers");
 var jsdomHelper_1 = require("../jsdom/jsdomHelper");
 var priclerPuppeteer_1 = require("../puppeteer/priclerPuppeteer");
 var types_1 = require("../../types/types");
-var database_1 = require("../db/database");
+var products_database_1 = require("../db/products.database");
 var clickSeeAllButtonFromDom = function (dom) {
     return dom.querySelector("a.cmsTeaserRow-controls__see-all").click();
 };
@@ -298,6 +298,7 @@ var Coopcrawler = /** @class */ (function () {
                     case 2:
                         categoriesWithoutDuplicates = _a.sent();
                         maxPages = categoriesWithoutDuplicates.length;
+                        console.log("Found categories: ", categoriesWithoutDuplicates);
                         i = 0;
                         _a.label = 3;
                     case 3:
@@ -308,7 +309,7 @@ var Coopcrawler = /** @class */ (function () {
                         return [4 /*yield*/, this.loadProductsPerCategory(categoriesWithoutDuplicates[i], browser)];
                     case 5:
                         productsByCategory = _a.sent();
-                        productsByCategory.forEach(database_1.createOrUpdateProduct);
+                        productsByCategory.forEach(products_database_1.createOrUpdateProduct);
                         return [3 /*break*/, 7];
                     case 6:
                         e_2 = _a.sent();
@@ -330,3 +331,4 @@ var Coopcrawler = /** @class */ (function () {
     return Coopcrawler;
 }());
 exports.Coopcrawler = Coopcrawler;
+//# sourceMappingURL=coopcrawler.js.map

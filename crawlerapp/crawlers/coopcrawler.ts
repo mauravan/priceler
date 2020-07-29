@@ -16,7 +16,7 @@ import {
 } from "../puppeteer/priclerPuppeteer";
 import { Browser, Page } from "puppeteer";
 import { Product, RETAILER } from "../../types/types";
-import { createOrUpdateProduct } from "../db/database";
+import { createOrUpdateProduct } from "../db/products.database";
 
 const clickSeeAllButtonFromDom = (dom: Document): void =>
   (dom.querySelector(
@@ -173,7 +173,7 @@ export class Coopcrawler implements Crawler {
   }
 
   private mapHTMLProductToProduct(cat: string) {
-    return (productAsHTML) => {
+    return (productAsHTML: any) => {
       const price = productAsHTML.prices[0];
       const { quantity, unit } = this.parseQuantityAndUnit(
         withoutLeadingAndTrailingWhitespace(price.quantity)
@@ -214,7 +214,7 @@ export class Coopcrawler implements Crawler {
   // JSDOM
   async readCategoriesFromUrlWithoutDuplicates() {
     const coopCategoryUrls = await this.getCategoryUrls();
-    const alreadyContainedCategory = [];
+    const alreadyContainedCategory: Array<string> = [];
     return coopCategoryUrls.filter(({ url }) => {
       if (alreadyContainedCategory.includes(url)) {
         return false;
@@ -231,6 +231,8 @@ export class Coopcrawler implements Crawler {
     let browser = await initializeBrowser();
     const categoriesWithoutDuplicates = await this.readCategoriesFromUrlWithoutDuplicates();
     const maxPages = categoriesWithoutDuplicates.length;
+
+    console.log("Found categories: ", categoriesWithoutDuplicates);
 
     for (let i = 0; i < maxPages && i < amountOfPages; i++) {
       try {
