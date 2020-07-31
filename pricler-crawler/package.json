@@ -1,0 +1,30 @@
+{
+    "name": "pricler-crawler",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "cross-env": "5.0.5",
+        "pricler-database": "1.0.0",
+        "got": "^11.3.0",
+        "jsdom": "^16.2.2",
+        "pretty": "^2.0.0",
+        "puppeteer": "^3.3.0",
+        "pricler-types": "1.0.0"
+    },
+    "devDependencies": {
+        "@types/jsdom": "^16.2.3",
+        "@types/puppeteer": "^3.0.1",
+        "@types/express": "^4.17.7",
+        "@types/node": "^14.0.23",
+        "dotenv": "^8.2.0",
+        "typescript": "~3.9.5"
+
+    }
+}

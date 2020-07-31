@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "workspaces": ["pricler-backend", "pricler-crawler", "pricler-database", "pricler-types", "pricler-frontend"],
+  "scripts": {
+    "build": "tsc -b pricler-types pricler-database pricler-crawler pricler-backend -w"
+  }
+}

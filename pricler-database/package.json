@@ -1,0 +1,26 @@
+{
+    "name": "pricler-database",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "cross-env": "5.0.5",
+        "mongodb": "^3.5.9",
+        "sqlite3": "^5.0.0",
+        "pricler-types": "1.0.0"
+    },
+    "devDependencies": {
+        "@types/sqlite3": "^3.1.6",
+        "@types/mongodb": "^3.5.25",
+        "@types/node": "^14.0.23",
+        "prettier": "2.0.5",
+        "dotenv": "^8.2.0",
+        "typescript": "~3.9.5"
+    }
+}
