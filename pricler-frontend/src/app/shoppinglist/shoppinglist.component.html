@@ -1,0 +1,11 @@
+<mat-card *ngIf="shoppingList$ | async as shoppinglist">
+    <mat-list role="list" ngClass="fullWidth">
+        <mat-list-item
+            (click)="removeProductFromShoppingList(shoppinglist._id, product)"
+            role="listitem"
+            *ngFor="let product of shoppinglist.products"
+        >
+            {{ product.name }}
+        </mat-list-item>
+    </mat-list>
+</mat-card>

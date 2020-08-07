@@ -51,7 +51,7 @@ function extractOriginalPrice(product: types.MigrosArticle): number {
     if (priceInfoPrice) {
         return helpers.onlyNumbersParsingToInt(priceInfoPrice);
     }
-    return null;
+    return 0;
 }
 
 function extractQuantityAndUnit(quantityText: string) {
@@ -133,8 +133,8 @@ export function mapMigrosArticleToProduct(article: types.MigrosArticle): types.P
                 date: new Date(),
                 price: price,
                 original_price: extractOriginalPrice(article),
-                quantity: quantity,
-                unit: unit,
+                quantity: quantity ?? 0,
+                unit: unit ?? '',
                 normalized_price: helpers.normalizedPrice(price, quantity),
             },
         ],

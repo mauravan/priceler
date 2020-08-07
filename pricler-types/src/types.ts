@@ -24,7 +24,6 @@ export enum CRAWLERTYPE {
 }
 
 export enum DBTYPE {
-    SQLITE = 'SQLITE',
     MONGO = 'MONGO',
 }
 
@@ -60,13 +59,14 @@ export interface IDatabase {
         start: number,
         end: number
     ): Promise<Array<Product>>;
-    getShoppingList(): Promise<Shoppinglist>;
-    insertProductIntoShoppinglist({ id }: Product): Promise<number | null>;
-    removeProductFromShoppinglist(id: string): Promise<number | null>;
+    getShoppingList(id: string): Promise<Shoppinglist>;
+    insertProductIntoShoppinglist(shoppingListId: string, product: Product): Promise<any>;
+    removeProductFromShoppinglist(shoppingList: string, product: string): Promise<any>;
 }
 
 export interface Product {
     id?: number;
+    _id?: string;
     externalId: number;
     name: string;
     retailer: number;
@@ -75,16 +75,24 @@ export interface Product {
 }
 
 export interface FlatProduct {
-    id: number;
+    id?: number;
+    _id?: string;
+    externalId: number;
     name: string;
     retailer: number;
+    category: string;
     price: number;
-    quantity: number;
+    original_price?: number;
+    date: Date;
+    quantity?: number;
     unit: string;
     normalized_price: number;
 }
 
-export type Shoppinglist = Array<Product>;
+export interface Shoppinglist {
+    _id?: string;
+    products: Array<Product>;
+}
 
 export interface Price {
     id?: number;
@@ -100,10 +108,40 @@ export function isPromoted(price: Price) {
     return price.original_price != null;
 }
 
+export const PRICES_VALIDATOR = {
+    $jsonSchema: {
+        bsonType: 'object',
+        required: ['price', 'date', 'normalized_price'],
+        properties: {
+            price: {
+                bsonType: 'number',
+            },
+            original_price: {
+                bsonType: 'number',
+            },
+            date: {
+                bsonType: 'date',
+            },
+            quantity: {
+                bsonType: 'number',
+            },
+            unit: {
+                bsonType: 'string',
+            },
+            normalized_price: {
+                bsonType: 'number',
+            },
+            product_id: {
+                bsonType: 'objectId',
+            },
+        },
+    },
+};
+
 export const PODUCTS_VALIDATOR = {
     $jsonSchema: {
         bsonType: 'object',
-        required: ['name', 'retailer', 'prices'],
+        required: ['name', 'retailer'],
         properties: {
             externalId: {
                 bsonType: 'number',
@@ -118,41 +156,18 @@ export const PODUCTS_VALIDATOR = {
             category: {
                 bsonType: 'string',
             },
-            prices: {
-                bsonType: 'array',
-                minItems: 1,
-                items: {
-                    bsonType: 'object',
-                    required: ['price', 'date', 'normalized_price'],
-                    properties: {
-                        price: {
-                            bsonType: 'number',
-                        },
-                        original_price: {
-                            bsonType: 'number',
-                        },
-                        date: {
-                            bsonType: 'date',
-                        },
-                        quantity: {
-                            bsonType: 'number',
-                        },
-                        unit: {
-                            bsonType: 'string',
-                        },
-                        normalized_price: {
-                            bsonType: 'number',
-                        },
-                    },
-                },
-            },
         },
     },
 };
 
 export const SHOPPINGLIST_VALIDATOR = {
     $jsonSchema: {
-        bsonType: 'array',
-        items: PODUCTS_VALIDATOR.$jsonSchema,
+        bsonType: 'object',
+        properties: {
+            products: {
+                bsonType: 'array',
+                items: PODUCTS_VALIDATOR.$jsonSchema,
+            },
+        },
     },
 };

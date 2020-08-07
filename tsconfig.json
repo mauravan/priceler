@@ -12,6 +12,7 @@
   },
   "exclude": [
     "node_modules",
-    "pricler-frontend"
+    "pricler-frontend",
+    "dist"
   ]
 }

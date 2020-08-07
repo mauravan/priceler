@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
-import { loadDbInstance } from 'pricler-database';
 import { helpers } from 'pricler-types';
+import { loadDbInstance } from 'pricler-database';
 
 const db = loadDbInstance();
 
-async function shoppingListOr500(res: Response) {
+async function shoppingListOr500(id: string, res: Response) {
     try {
-        const shoppinglist = await db.getShoppingList();
+        const shoppinglist = await db.getShoppingList(id);
         const data = `data: ${JSON.stringify(shoppinglist)}\n\n`;
         res.write(data);
     } catch (e) {
@@ -23,7 +23,7 @@ export async function getShoppingListHandler(req: Request, res: Response) {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders(); // flush the headers to establish SSE with client
     // After client opens connection send shopinglist
-    await shoppingListOr500(res);
+    await shoppingListOr500(req.params.id, res);
     // Generate an id based on timestamp and save res
     // object of client connection on clients list
     // Later we'll iterate it and send updates to each client
@@ -37,22 +37,22 @@ export async function getShoppingListHandler(req: Request, res: Response) {
     });
 }
 
-export async function postProductToShoppingListHandler({ body }: Request, res: Response) {
+export async function postProductToShoppingListHandler({ params: { id }, body }: Request, res: Response) {
     try {
-        await helpers.retryAble(() => db.insertProductIntoShoppinglist(body));
+        await helpers.retryAble(() => db.insertProductIntoShoppinglist(id, body));
         res.json({}).status(200).send();
-        await shoppingListOr500(client);
+        await shoppingListOr500(id, client);
     } catch (e) {
         res.sendStatus(500);
         console.log(e);
     }
 }
 
-export async function deleteProductToShoppingListHandler({ params: { id } }: Request, res: Response) {
+export async function deleteProductToShoppingListHandler({ params: { id, productId } }: Request, res: Response) {
     try {
-        await db.removeProductFromShoppinglist(id);
+        await db.removeProductFromShoppinglist(id, productId);
         res.json({}).status(200).send();
-        await shoppingListOr500(client);
+        await shoppingListOr500(id, client);
     } catch (e) {
         res.sendStatus(500);
         console.log(e);

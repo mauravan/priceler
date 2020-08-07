@@ -1,6 +1,6 @@
 import { Crawler } from './crawler';
 import { helpers, types, env } from 'pricler-types';
-import { goToPageReturningDom } from '../jsdom/jsdomHelper';
+import { goToPageReturningWindow } from '../jsdom/jsdomHelper';
 import { autoScroll, closeBrowser, initializeBrowser, navigateToUrl, openNewPage } from '../puppeteer/priclerPuppeteer';
 import { Browser, Page } from 'puppeteer';
 
@@ -26,14 +26,16 @@ export class Coopcrawler implements Crawler {
     ) {}
 
     async getCategoryUrls(): Promise<Array<{ url: string; cat: string }>> {
-        const dom = await goToPageReturningDom(this.baseUrl);
-        clickSeeAllButtonFromDom(dom);
-        return Array.from(getCoopCarouselContainigLinks(dom))
+        const dom = await goToPageReturningWindow(this.baseUrl);
+        clickSeeAllButtonFromDom(dom.document);
+        const map = Array.from(getCoopCarouselContainigLinks(dom.document))
             .reduce((acc, curr) => [...acc, ...Array.from(getCoopLinksFromContainer(curr))], [])
             .map((el) => ({
                 url: el.href,
                 cat: helpers.withoutLeadingAndTrailingWhitespace(el.text),
             }));
+        dom.close();
+        return map;
     }
 
     async loadAllProductsToDom(page: Page) {
@@ -247,6 +249,7 @@ export class Coopcrawler implements Crawler {
                 }
                 if (retry > 0) {
                     console.log(this.type, ' | retry: ', 5 - retry, ' of: ', retry, ' times');
+                    i = i - 1;
                 } else {
                     console.log(this.type, ' | giving up, going to next page');
                 }

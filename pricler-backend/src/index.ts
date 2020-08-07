@@ -12,7 +12,7 @@ const app = express();
 process.on('SIGTERM', () => {
     if (app) {
         app.close(() => {
-            loadDbInstance().closeDB();
+            loadDbInstance().close();
             console.log('Closed out remaining connections.');
         });
     }
@@ -22,8 +22,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/shoppinglist', getShoppingListHandler);
-app.post('/shoppinglist', postProductToShoppingListHandler);
-app.delete('/shoppinglist/:id', deleteProductToShoppingListHandler);
+app.get('/shoppinglist/:id', getShoppingListHandler);
+app.post('/shoppinglist/:id', postProductToShoppingListHandler);
+app.delete('/shoppinglist/:id/:productId', deleteProductToShoppingListHandler);
 app.get('/products/count', getProductsCountHandler);
 app.get('/products', getProductsHandler);
 

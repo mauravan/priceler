@@ -3,7 +3,7 @@ import { helpers } from 'pricler-types';
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
-export async function goToPageReturningDom(url: string): Promise<Document> {
+export async function goToPageReturningWindow(url: string): Promise<Window> {
     console.log('navigating to url: ', url);
     const virtualConsole = new jsdom.VirtualConsole(); // removing console errors
 
@@ -17,5 +17,5 @@ export async function goToPageReturningDom(url: string): Promise<Document> {
             }),
         4
     );
-    return document.window.document;
+    return document.window;
 }

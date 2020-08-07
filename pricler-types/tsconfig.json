@@ -6,9 +6,15 @@
         "moduleResolution": "node",
         "rootDir": "src",
         "outDir": "dist",
-        "declaration": true
+        "declaration": true,
+        "allowJs": false
     },
     "include": [
       "src/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "./dist/**/*",
+        "dist"
     ]
 }

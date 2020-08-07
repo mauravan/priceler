@@ -1,4 +1,4 @@
-import { Db, MongoClient, MongoError } from 'mongodb';
+import { Db, FindAndModifyWriteOpResultObject, MongoClient, MongoError, UpdateWriteOpResult } from 'mongodb';
 import { env, types } from 'pricler-types';
 
 const MongoDB = require('mongodb').MongoClient;
@@ -6,6 +6,7 @@ const url = 'mongodb://localhost:27017';
 const dbname = 'pricler';
 
 const PRODUCTS_COLLECTION = 'products';
+const PRICES_COLLECTION = 'prices';
 const SHOPPINGLIST_COLLECTION = 'shoppinglist';
 
 export class MongodbDatabase implements types.IDatabase {
@@ -43,23 +44,30 @@ export class MongodbDatabase implements types.IDatabase {
     }
 
     initializeSchema(): Promise<any> {
-        const callback = (res: any, rej: any) => (err: any) => (err ? console.log(err) : res());
+        const callback = (res: any, _: any) => (err: any) => (err?.code !== 48 ? console.log(err) : res());
         const products = new Promise<void>((resolve, reject) =>
             this.db.createCollection(
                 PRODUCTS_COLLECTION,
-                { validator: types.PODUCTS_VALIDATOR },
+                { validator: types.PODUCTS_VALIDATOR, collation: { locale: 'de' } },
+                callback(resolve, reject)
+            )
+        );
+        const prices = new Promise<void>((resolve, reject) =>
+            this.db.createCollection(
+                PRICES_COLLECTION,
+                { validator: types.PRICES_VALIDATOR, collation: { locale: 'de' } },
                 callback(resolve, reject)
             )
         );
         const shoppinglist = new Promise<void>((resolve, reject) =>
             this.db.createCollection(
                 SHOPPINGLIST_COLLECTION,
-                { validator: types.SHOPPINGLIST_VALIDATOR },
+                { validator: types.SHOPPINGLIST_VALIDATOR, collation: { locale: 'de' } },
                 callback(resolve, reject)
             )
         );
 
-        return Promise.all([products, shoppinglist]);
+        return Promise.all([products, prices, shoppinglist]);
     }
 
     async close(): Promise<void> {
@@ -69,11 +77,31 @@ export class MongodbDatabase implements types.IDatabase {
         }
     }
 
-    createOrUpdateProduct(product: types.Product) {
+    async createOrUpdateProduct({ prices, ...rest }: types.Product) {
+        if (prices.length === 0) {
+            console.log(rest, ' does not have prices: ', prices);
+        }
+
         const productsCollection = this.db.collection(PRODUCTS_COLLECTION);
-        return productsCollection
-            .updateOne(product, { $push: { prices: { $each: product.prices } } }, { upsert: true })
-            .catch(() => console.log(product));
+        const pricesCollection = this.db.collection(PRICES_COLLECTION);
+        const result = await productsCollection
+            .findOneAndUpdate(rest, { $set: rest }, { returnOriginal: false, upsert: true })
+            .catch((e) => console.log('cannot insert: ', rest, e));
+        if ((result as FindAndModifyWriteOpResultObject<any>)?.ok) {
+            return pricesCollection
+                .insertOne({ ...prices[0], product_id: (result as FindAndModifyWriteOpResultObject<any>).value._id })
+                .catch((e) =>
+                    console.log(
+                        'cannot insert: ',
+                        { ...prices[0], product_id: (result as FindAndModifyWriteOpResultObject<any>).value._id },
+                        result,
+                        e
+                    )
+                );
+        } else {
+            console.log('could not insert prices to product: ', rest, ' result from db: ', result);
+        }
+        return result;
     }
 
     getProductCount(): Promise<{ count: number }> {
@@ -89,7 +117,7 @@ export class MongodbDatabase implements types.IDatabase {
     }
 
     mapOrder(order: string): number {
-        return order === 'DESC' ? -1 : 1;
+        return order.toUpperCase() === 'DESC' ? -1 : 1;
     }
 
     getProductsPagedAndSortedFiltered(
@@ -98,25 +126,92 @@ export class MongodbDatabase implements types.IDatabase {
         order: string,
         start: number,
         end: number
-    ): Promise<Array<types.Product>> {
+    ): Promise<Array<types.FlatProduct>> {
         const collection = this.db.collection(PRODUCTS_COLLECTION);
+
+        if(['price', 'quantity', 'unit', 'normalized_price'].includes(sort)) {
+            const priceCollection = this.db.collection(PRICES_COLLECTION);
+            return priceCollection.aggregate([
+                { $sort: { [sort]: this.mapOrder(order) } },
+                {
+                    $lookup: {
+                        from: PRODUCTS_COLLECTION,
+                        localField: 'product_id',
+                        foreignField: '_id',
+                        as: 'products'
+
+                    },
+                },
+                {
+                    $replaceRoot: { newRoot: { $mergeObjects: [{ $arrayElemAt: ['$products', 0] }, '$$ROOT'] } },
+                },
+                {
+                    $project: {
+                        'products': false,
+                    },
+                },
+                { $match: { name: new RegExp(`.*${filter}.*`, 'gi') } },
+                { $skip: start },
+                { $limit: end },
+            ]).toArray()
+        }
+
         return collection
-            .find({ name: new RegExp(`.*${filter}.*`, 'gi') })
-            .sort({ [sort]: this.mapOrder(order) })
-            .skip(start)
-            .limit(end)
+            .aggregate([
+                { $match: { name: new RegExp(`.*${filter}.*`, 'gi') } },
+                { $sort: { [sort]: this.mapOrder(order) } },
+                { $skip: start },
+                { $limit: end },
+                {
+                    $lookup: {
+                        from: PRICES_COLLECTION,
+                        let: { priceid: '$_id' },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ['$$priceid', '$product_id'] } } },
+                            { $sort: { date: -1 } },
+                            { $limit: 1 },
+                        ],
+                        as: 'lookup-latest',
+                    },
+                },
+                {
+                    $replaceRoot: { newRoot: { $mergeObjects: [{ $arrayElemAt: ['$lookup-latest', 0] }, '$$ROOT'] } },
+                },
+                {
+                    $project: {
+                        'lookup-latest': false,
+                    },
+                },
+            ])
             .toArray();
     }
 
-    getShoppingList(): Promise<types.Shoppinglist> {
-        return Promise.resolve([]);
+    // TODO: Use ID with USER
+    async getShoppingList(id: string): Promise<types.Shoppinglist> {
+        const shoppinglistCollection = this.db.collection(SHOPPINGLIST_COLLECTION);
+        const res = await shoppinglistCollection.find().toArray();
+        if (res.length === 0) {
+            const insertedShoppinglist = await shoppinglistCollection.insertOne(
+                { products: [] },
+                { forceServerObjectId: false }
+            );
+            return insertedShoppinglist.ops[0];
+        }
+
+        return res[0];
     }
 
-    insertProductIntoShoppinglist({ id }: types.Product): Promise<number | null> {
-        return Promise.resolve(undefined);
+    insertProductIntoShoppinglist(shoppinglistid: string, product: types.Product): Promise<void | UpdateWriteOpResult> {
+        const shoppinglistCollection = this.db.collection(SHOPPINGLIST_COLLECTION);
+        return shoppinglistCollection
+            .updateOne({ _id: shoppinglistid }, { $addToSet: { products: product } }, { upsert: true })
+            .catch(() => console.log(product));
     }
 
-    removeProductFromShoppinglist(id: string): Promise<number | null> {
-        return Promise.resolve(undefined);
+    removeProductFromShoppinglist(shoppinglistid: string, productId: string): Promise<void | UpdateWriteOpResult> {
+        const shoppinglistCollection = this.db.collection(SHOPPINGLIST_COLLECTION);
+        return shoppinglistCollection
+            .updateOne({ _id: shoppinglistid }, { $pull: { products: { _id: productId } } })
+            .catch(() => console.log(productId));
     }
 }

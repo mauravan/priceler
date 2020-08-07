@@ -27,7 +27,7 @@ export function getProductsHandler({ query }: Request, res: Response) {
                     pageAsNumber * limitAsNumber,
                     limitAsNumber
                 )
-                .then((products: Array<types.Product>) => {
+                .then((products: Array<types.FlatProduct>) => {
                     return res.json(products);
                 })
                 .catch((err: any) => {
@@ -37,7 +37,7 @@ export function getProductsHandler({ query }: Request, res: Response) {
     }
     return db
         .getProductsPagedAndSortedFiltered('', 'name', 'DESC', 0, 100)
-        .then((products: types.Product) => {
+        .then((products) => {
             return res.json(products);
         })
         .catch(console.log);

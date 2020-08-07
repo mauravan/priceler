@@ -6,14 +6,14 @@ import { CollectionViewer, DataSource } from '@angular/cdk/collections';
 import { SortDirection } from '@angular/material/sort';
 
 export class ProductsDataSource implements DataSource<types.FlatProduct> {
-    private productsSubject = new BehaviorSubject<types.FlatProduct[]>([]);
+    private productsSubject = new BehaviorSubject<Array<types.FlatProduct>>([]);
     private loadingSubject = new BehaviorSubject<boolean>(false);
 
     public loading$ = this.loadingSubject.asObservable();
 
     constructor(private http: HttpClient) {}
 
-    connect(collectionViewer: CollectionViewer): Observable<types.FlatProduct[]> {
+    connect(collectionViewer: CollectionViewer): Observable<Array<types.FlatProduct>> {
         return this.productsSubject.asObservable();
     }
 
@@ -39,7 +39,7 @@ export class ProductsDataSource implements DataSource<types.FlatProduct> {
         order: SortDirection,
         pageNumber = 0,
         pageSize = 3
-    ): Observable<types.FlatProduct[]> {
+    ): Observable<Array<types.FlatProduct>> {
         return this.http.get<Array<types.FlatProduct>>('/products', {
             params: new HttpParams()
                 .set('filter', filter.toString())

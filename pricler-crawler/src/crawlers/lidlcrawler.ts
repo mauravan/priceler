@@ -1,5 +1,5 @@
 import { Crawler } from './crawler';
-import { goToPageReturningDom } from '../jsdom/jsdomHelper';
+import { goToPageReturningWindow } from '../jsdom/jsdomHelper';
 import { types, env, helpers } from 'pricler-types';
 
 const getExternalIdFromDetailHTML = (details: Element) =>
@@ -131,20 +131,25 @@ export class Lidlcrawler implements Crawler {
         console.log('starting crawler: ', this.type);
         const stopwatch = new helpers.Stopwatch();
 
-        const loadedDom = await goToPageReturningDom(`${this.baseUrl + this.pageUrl}1`);
-        const maxPages = this.getMaxCount(loadedDom);
+        const loadedDom = await goToPageReturningWindow(`${this.baseUrl + this.pageUrl}1`);
+        const maxPages = this.getMaxCount(loadedDom.document);
+        loadedDom.close();
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         console.log('Found pages: ', maxPages);
 
         let retry = 5;
         for (let i = env.startingPageLidl(); i <= maxPages && i <= amountOfPages; i++) {
             try {
-                const loadedJsDom = await goToPageReturningDom(`${this.baseUrl + this.pageUrl}${i}`);
+                let loadedJsDom = await goToPageReturningWindow(`${this.baseUrl + this.pageUrl}${i}`);
                 try {
-                    this.getDataFromDocument(loadedJsDom).map(this.database.createOrUpdateProduct);
+                    this.getDataFromDocument(loadedJsDom.document).map(this.database.createOrUpdateProduct);
                 } catch (e) {
                     console.log('Error in mapping data in crawler: ', this.type, ' | ', e);
                 }
+                loadedJsDom.close();
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
                 retry = 5;
             } catch (e) {
                 if (env.debugMode()) {

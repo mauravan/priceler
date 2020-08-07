@@ -15,7 +15,7 @@ import { types } from 'pricler-types';
     styleUrls: ['./table.component.scss'],
 })
 export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
-    displayedColumns: string[] = ['id', 'name', 'retailer', 'price', 'quantity', 'unit', 'normalized_price'];
+    displayedColumns: string[] = ['_id', 'name', 'retailer', 'price', 'quantity', 'unit', 'normalized_price'];
     dataSource: ProductsDataSource;
     productsCount: Observable<number>;
     keyUpObservable: Subscription;
@@ -45,6 +45,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
 
         this.mergedSubscription = merge(this.sort.sortChange, this.paginator.page, keyUpObservable)
             .pipe(
+                debounceTime(500),
                 tap(() => {
                     return this.dataSource.loadProducts(
                         this.input.nativeElement.value,
