@@ -9,6 +9,18 @@ const clickSeeAllButtonFromDom = (dom: Document): void =>
 const getCoopCarouselContainigLinks = (dom: Document): NodeListOf<HTMLLIElement> =>
     dom.querySelectorAll('div.cmsList.cmsList--link>ul.cmsList__list');
 const getCoopLinksFromContainer = (el: Element) => el.querySelectorAll('a.cmsList__itemLink');
+
+// Means we are at the bottom
+const listPageTriggerDisplayNone = () =>
+    document.querySelector('a.list-page__trigger') != null &&
+    // @ts-ignore
+    document.querySelector('a.list-page__trigger').style.display === 'none';
+
+const listPageTriggerVisibilityHidden = () =>
+    document.querySelector('a.list-page__trigger') != null &&
+    // @ts-ignore
+    document.querySelector('a.list-page__trigger').style.visibility === 'hidden';
+
 const listPageTriggerPresent = () =>
     document.querySelector('a.list-page__trigger') != null &&
     // @ts-ignore
@@ -42,9 +54,19 @@ export class Coopcrawler implements Crawler {
         try {
             await autoScroll(page);
             // @ts-ignore
-            while (await page.evaluate(listPageTriggerPresent)) {
-                await page.evaluate(clickListPageTrigger);
-                await autoScroll(page);
+            while (!(await page.evaluate(listPageTriggerDisplayNone))) {
+                console.log('list page trigger: display block');
+                while (await page.evaluate(listPageTriggerVisibilityHidden)) {
+                    console.log('list page trigger: visibility hidden');
+                    await autoScroll(page);
+                }
+                if (
+                    (await page.evaluate(listPageTriggerPresent)) &&
+                    !(await page.evaluate(listPageTriggerVisibilityHidden))
+                ) {
+                    console.log('clicking next page');
+                    await page.evaluate(clickListPageTrigger);
+                }
             }
         } catch (e) {
             console.log('error trying to autoscroll - continuing', e);
@@ -185,6 +207,8 @@ export class Coopcrawler implements Crawler {
                 originalPrice = 0;
             }
 
+            console.log(productAsHTML.name);
+
             return {
                 name: productAsHTML.name,
                 externalId: productAsHTML.externalId,
@@ -193,10 +217,10 @@ export class Coopcrawler implements Crawler {
                 prices: [
                     {
                         date: new Date(),
-                        quantity: quantity,
-                        price: priceAsInt,
-                        original_price: originalPrice,
-                        unit: unit,
+                        quantity: quantity ?? 0,
+                        price: priceAsInt ?? 0,
+                        original_price: originalPrice ?? 0,
+                        unit: unit ?? '',
                         normalized_price: helpers.normalizedPrice(priceAsInt, quantity),
                     },
                 ],

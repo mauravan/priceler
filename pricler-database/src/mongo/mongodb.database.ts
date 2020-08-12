@@ -67,7 +67,11 @@ export class MongodbDatabase implements types.IDatabase {
             )
         );
 
-        return Promise.all([products, prices, shoppinglist]);
+        const productsIndex = this.db
+            .collection(PRODUCTS_COLLECTION)
+            .createIndex({ name: 'text' }, { collation: { locale: 'simple' } });
+
+        return Promise.all([products, productsIndex, prices, shoppinglist]);
     }
 
     async close(): Promise<void> {
@@ -129,37 +133,50 @@ export class MongodbDatabase implements types.IDatabase {
     ): Promise<Array<types.FlatProduct>> {
         const collection = this.db.collection(PRODUCTS_COLLECTION);
 
-        if(['price', 'quantity', 'unit', 'normalized_price'].includes(sort)) {
+        if (['price', 'quantity', 'unit', 'normalized_price'].includes(sort)) {
             const priceCollection = this.db.collection(PRICES_COLLECTION);
-            return priceCollection.aggregate([
-                { $sort: { [sort]: this.mapOrder(order) } },
-                {
-                    $lookup: {
-                        from: PRODUCTS_COLLECTION,
-                        localField: 'product_id',
-                        foreignField: '_id',
-                        as: 'products'
+            return priceCollection
+                .aggregate([
+                    { $sort: { [sort]: this.mapOrder(order) } },
+                    {
+                        $lookup: {
+                            from: PRODUCTS_COLLECTION,
+                            localField: 'product_id',
+                            foreignField: '_id',
+                            as: 'products',
+                        },
+                    },
+                    {
+                        $replaceRoot: { newRoot: { $mergeObjects: [{ $arrayElemAt: ['$products', 0] }, '$$ROOT'] } },
+                    },
+                    {
+                        $project: {
+                            products: false,
+                        },
+                    },
+                    { $match: { name: new RegExp(`.*${filter}.*`, 'gi') } },
+                    { $skip: start },
+                    { $limit: end },
+                ])
+                .toArray();
+        }
 
-                    },
-                },
-                {
-                    $replaceRoot: { newRoot: { $mergeObjects: [{ $arrayElemAt: ['$products', 0] }, '$$ROOT'] } },
-                },
-                {
-                    $project: {
-                        'products': false,
-                    },
-                },
+        let pipeline;
+        if (filter) {
+            pipeline = [
+                { $match: { $text: { $search: filter } } },
+                { $sort: { score: { $meta: 'textScore' } } },
+            ];
+        } else {
+            pipeline = [
                 { $match: { name: new RegExp(`.*${filter}.*`, 'gi') } },
-                { $skip: start },
-                { $limit: end },
-            ]).toArray()
+                { $sort: { [sort]: this.mapOrder(order) } },
+            ];
         }
 
         return collection
             .aggregate([
-                { $match: { name: new RegExp(`.*${filter}.*`, 'gi') } },
-                { $sort: { [sort]: this.mapOrder(order) } },
+                ...pipeline,
                 { $skip: start },
                 { $limit: end },
                 {

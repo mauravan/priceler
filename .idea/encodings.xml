@@ -3,5 +3,6 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/../ship-rac/gradle.properties" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/../ship-rac/rest/src/main/resources/application-dev-spitex.properties" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../ship-rac/rest/src/test/resources/application-existtest.properties" charset="UTF-8" />
   </component>
 </project>

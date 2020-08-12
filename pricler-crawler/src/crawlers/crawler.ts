@@ -10,7 +10,7 @@ const migrosPageUrl = '?page=';
 const lildBaseUrl = 'https://sortiment.lidl.ch/de/alle-kategorien.html';
 const lidlPageUrl = '?p=';
 const aldiBaseUrl = 'https://www.aldi-suisse.ch/de/sortiment';
-const coopBaseUrl = 'https://www.coop.ch/de/';
+const coopBaseUrl = 'https://www.coop.ch/de/lebensmittel/c/supermarket';
 
 export interface Crawler {
     crawl(amountOfPages: number): Promise<void>;

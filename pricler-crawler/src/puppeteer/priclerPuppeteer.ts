@@ -65,6 +65,7 @@ export function closeBrowser(browser: Browser): Promise<void> {
     }
 }
 
+// visibility: hidden;
 export function autoScroll(page: Page) {
     return page.evaluate(() => {
         return new Promise((resolve) => {
